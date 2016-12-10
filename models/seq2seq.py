@@ -48,20 +48,6 @@ _buckets = [(5, 10), (10, 15), (15, 25), (20, 50), (25, 100)]
 
 
 def read_data(path, max_size=None):
-    """Read data from source and target files and put into buckets.
-    Argsp:
-      source_path: path to the files with token-ids for the source language.
-      target_path: path to the file with token-ids for the target language;
-        it must be aligned with the source file: n-th line contains the desired
-        output for n-th line from the source_path.
-      max_size: maximum number of lines to read, all other will be ignored;
-        if 0 or None, data files will be read completely (no limit).
-    Returns:
-      data_set: a list of length len(_buckets); data_set[n] contains a list of
-        (source, target) pairs read from the provided data files that fit
-        into the n-th bucket, i.e., such that len(source) < _buckets[n][0] and
-        len(target) < _buckets[n][1]; source and target are lists of token-ids.
-    """
     data_set = [[] for _ in _buckets]
     pairs = pickle.load(open(path, "rb"))
     input_vocab = pickle.load(open("diag_vocab.pkl", "rb"))
@@ -125,17 +111,12 @@ def train():
         print("Creating %d layers of %d units." % (FLAGS.num_layers, FLAGS.size))
         model = create_model(sess, False)
 
-        # Read data into buckets and compute their sizes.
-        print("Reading development and training data (limit: %d)."
-              % FLAGS.max_train_data_size)
+        print("Reading development and training data (limit: %d)." % FLAGS.max_train_data_size)
         dev_set = read_data("mimic_episodes_test.pkl", 10)
         train_set = read_data("mimic_episodes_train.pkl")
         train_bucket_sizes = [len(train_set[b]) for b in xrange(len(_buckets))]
         train_total_size = float(sum(train_bucket_sizes))
 
-        # A bucket scale is a list of increasing numbers from 0 to 1 that we'll use
-        # to select a bucket. Length of [scale[i], scale[i+1]] is proportional to
-        # the size if i-th training bucket, as used later.
         train_buckets_scale = [sum(train_bucket_sizes[:i + 1]) / train_total_size
                                for i in xrange(len(train_bucket_sizes))]
 
