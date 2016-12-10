@@ -52,6 +52,14 @@ def run_to_index():
         pickle.dump(test_index_set, f_out)
 
 
+def downgrade_pickle():
+    for f in ["mimic_episodes_test.pkl", "mimic_episodes_train.pkl", "diag_vocab.pkl", "drug_vocab.pkl", "mimic_episodes.pkl"]:
+        with open(f, "rb") as f_in:
+            d = pickle.load(f_in)
+            with open(f+'1', "wb") as f_out:
+                pickle.dump(d, f_out, protocol=2)
+
+
 def dump(obj, path):
     with open(get_path(path), "wb") as f_out:
         pickle.dump(obj, f_out)
