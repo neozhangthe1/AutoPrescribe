@@ -9,6 +9,24 @@ def get_path(path):
     return os.path.join(directory, path)
 
 
+def clean_data():
+    train_set = pickle.load(open(get_path("mimic_episodes_train.pkl"), "rb"))
+    test_set = pickle.load(open(get_path("mimic_episodes_test.pkl"), "rb"))
+
+    def clean(src_set):
+        for pair in src_set:
+            if "0" in pair[1]:
+                pair[1].remove("0")
+            if '' in pair[1]:
+                pair[1].remove('')
+
+    with open("mimic_episodes_train.pkl", "wb") as f_out:
+        pickle.dump(train_set, f_out)
+
+    with open("mimic_episodes_test.pkl", "wb") as f_out:
+        pickle.dump(test_set, f_out)
+
+
 def to_index(src_set, input_vocab, output_vocab):
     target_set = []
     for pair in src_set:
@@ -35,6 +53,15 @@ def run_to_index():
         pickle.dump(train_index_set, f_out)
     with open(get_path("mimic_episodes_index_test.pkl"), "wb") as f_out:
         pickle.dump(test_index_set, f_out)
+
+
+def dump(obj, path):
+    with open(get_path(path), "wb") as f_out:
+        pickle.dump(obj, f_out)
+
+
+def load(path):
+    return pickle.load(open(get_path(path), "rb"))
 
 
 if __name__ == "__main__":
