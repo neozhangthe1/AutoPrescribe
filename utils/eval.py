@@ -1,5 +1,5 @@
 from utils.data import load, dump
-from models import MostFreqMatch
+from models import MostFreqMatch, Embedding
 
 
 class Evaluator(object):
@@ -14,8 +14,8 @@ class Evaluator(object):
             tp = len(outputs.intersection(prediction))
             fp = len(prediction - outputs)
             fn = len(outputs - prediction)
-            precision = 0 if tp + fn == 0 else float(tp / (tp + fp))
-            recall = 0 if tp + fn == 0 else float(tp / (tp + fn))
+            precision = 0 if (tp + fp) == 0 else float(tp / (tp + fp))
+            recall = 0 if (tp + fn) == 0 else float(tp / (tp + fn))
             print(precision, recall)
 
 
@@ -24,3 +24,10 @@ def eval_freq():
     mfm = MostFreqMatch()
     mfm.load()
     evaluator.eval(mfm)
+
+
+def eval_emb():
+    evaluator = Evaluator()
+    emb = Embedding()
+    emb.load()
+    evaluator.eval(emb)

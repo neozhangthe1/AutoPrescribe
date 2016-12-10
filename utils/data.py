@@ -10,8 +10,8 @@ def get_path(path):
 
 
 def clean_data():
-    train_set = pickle.load(open(get_path("mimic_episodes_train.pkl"), "rb"))
-    test_set = pickle.load(open(get_path("mimic_episodes_test.pkl"), "rb"))
+    train_set = load("mimic_episodes_train.pkl")
+    test_set = load("mimic_episodes_test.pkl")
 
     def clean(src_set):
         for pair in src_set:
@@ -20,11 +20,8 @@ def clean_data():
             if '' in pair[1]:
                 pair[1].remove('')
 
-    with open("mimic_episodes_train.pkl", "wb") as f_out:
-        pickle.dump(train_set, f_out)
-
-    with open("mimic_episodes_test.pkl", "wb") as f_out:
-        pickle.dump(test_set, f_out)
+    dump(train_set, "mimic_episodes_train.pkl")
+    dump(test_set, "mimic_episodes_test.pkl")
 
 
 def to_index(src_set, input_vocab, output_vocab):
