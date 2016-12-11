@@ -11,12 +11,17 @@ class Evaluator(object):
         for pair in self.test_set:
             outputs = set(pair[1])
             prediction = set(model.predict(pair[0]))
-            tp = len(outputs.intersection(prediction))
-            fp = len(prediction - outputs)
-            fn = len(outputs - prediction)
-            precision = 0 if (tp + fp) == 0 else float(tp / (tp + fp))
-            recall = 0 if (tp + fn) == 0 else float(tp / (tp + fn))
+            precision, recall = self.get_result(outputs, prediction)
             print(precision, recall)
+
+    @staticmethod
+    def get_result(truth, prediction):
+        tp = len(truth.intersection(prediction))
+        fp = len(prediction - truth)
+        fn = len(truth - prediction)
+        precision = 0 if (tp + fp) == 0 else float(tp / (tp + fp))
+        recall = 0 if (tp + fn) == 0 else float(tp / (tp + fn))
+        return precision, recall
 
 
 def eval_freq():

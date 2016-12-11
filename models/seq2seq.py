@@ -15,6 +15,7 @@ import tensorflow as tf
 from tensorflow.models.rnn.translate import seq2seq_model
 from utils.data import get_model_path, load
 import utils.data
+from utils.eval import Evaluator
 
 # We use a number of buckets and pad to the closest one for efficiency.
 # See seq2seq_model.Seq2SeqModel for details of how they work.
@@ -35,6 +36,8 @@ class Seq2Seq(object):
                  train_dir="seq2seq/"):
         self.train_set = []
         self.dev_set = []
+        self.input_vocab = None
+        self.ouput_vocab = None
         self.input_vocab_size = 0
         self.output_vocab_size = 0
         self.session = tf.Session()
@@ -54,16 +57,27 @@ class Seq2Seq(object):
         self.global_step = None
         self.learning_rate = None
         self.learning_rate_decay_op = None
-
+        
+        self.PAD_ID = 4127
+        self.GO_ID = 4128
+        self.EOS_ID = 4129
+        self.UNK_ID = 4130
 
     def __del__(self):
         self.session.close()
 
-    def load_data(self, input_vocab_size, output_vocab_size, train_set, test_set):
-        self.input_vocab_size = input_vocab_size
-        self.output_vocab_size = output_vocab_size + 4
+    def load_data(self, input_vocab, output_vocab, train_set, test_set):
+        self.input_vocab = input_vocab
+        self.ouput_vocab = output_vocab
+        self.input_vocab_size = len(input_vocab)
+        self.output_vocab_size = len(output_vocab) + 4
         self.train_set = self.read_data(train_set)
         self.dev_set = self.read_data(test_set, 100)
+
+        self.PAD_ID = self.output_vocab_size - 1
+        self.GO_ID = self.PAD_ID - 1
+        self.EOS_ID = self.PAD_ID - 2
+        self.UNK_ID = self.PAD_ID - 3
 
     def read_data(self, train_set, max_size=None):
         data_set = [[] for _ in self.buckets]
@@ -74,7 +88,6 @@ class Seq2Seq(object):
                     break
             source_ids = [x for x in pair[0]]
             target_ids = [x for x in pair[1]]
-            target_ids.append(utils.data.EOS_ID)
             for bucket_id, (source_size, target_size) in enumerate(self.buckets):
                 if len(source_ids) < source_size and len(target_ids) < target_size:
                     data_set[bucket_id].append([source_ids, target_ids])
@@ -132,13 +145,14 @@ class Seq2Seq(object):
             random.shuffle(decoder_input)
 
             # Encoder inputs are padded and then reversed.
-            encoder_pad = [utils.data.PAD_ID] * (encoder_size - len(encoder_input))
+            encoder_pad = [self.PAD_ID] * (encoder_size - len(encoder_input))
             encoder_inputs.append(list(encoder_input + encoder_pad))
 
             # Decoder inputs get an extra "GO" symbol, and are padded then.
+            decoder_input.append(self.EOS_ID)
             decoder_pad_size = decoder_size - len(decoder_input) - 1
-            decoder_inputs.append([utils.data.GO_ID] + decoder_input +
-                                  [utils.data.PAD_ID] * decoder_pad_size)
+            decoder_inputs.append([self.GO_ID] + decoder_input +
+                                  [self.PAD_ID] * decoder_pad_size)
 
         # Now we create batch-major vectors from the data selected above.
         batch_encoder_inputs, batch_decoder_inputs, batch_weights = [], [], []
@@ -163,7 +177,7 @@ class Seq2Seq(object):
                 target = None
                 if length_idx < decoder_size - 1:
                     target = decoder_inputs[batch_idx][length_idx + 1]
-                if length_idx == decoder_size - 1 or target == utils.data.PAD_ID:
+                if length_idx == decoder_size - 1 or target == self.PAD_ID:
                     batch_weight[batch_idx] = 0.0
             batch_weights.append(batch_weight)
         return batch_encoder_inputs, batch_decoder_inputs, batch_weights
@@ -225,7 +239,37 @@ class Seq2Seq(object):
                                                  target_weights, bucket_id, True)
                     eval_ppx = math.exp(float(eval_loss)) if eval_loss < 300 else float("inf")
                     print("eval: bucket %d perplexity %.2f" % (bucket_id, eval_ppx))
+                    to_predict = self.dev_set[bucket_id][0]
+                    outputs = self.predict(to_predict[0])
+                    precision, recall = Evaluator.get_result(to_predict[1], outputs)
+                    print("inputs: ", to_predict[0])
+                    print("target: ", to_predict[1])
+                    print("output: ", outputs)
+                    print("pre", precision, "rec", recall)
                 sys.stdout.flush()
+
+    def predict(self, inputs):
+        bucket_id = len(self.buckets) - 1
+        for i, bucket in enumerate(self.buckets):
+            if bucket[0] >= len(inputs):
+                bucket_id = i
+                break
+
+        encoder_inputs, decoder_inputs, target_weights = self.get_batch({
+            bucket_id: [(inputs, [])]
+        }, bucket_id)
+
+        _, _, output_logits = self.model.step(
+            self.session,
+            encoder_inputs,
+            decoder_inputs,
+            target_weights,
+            bucket_id,
+            True
+        )
+
+        outputs = [int(np.argmax(logit, axis=1)) for logit in output_logits]
+        return outputs
 
     def decode(self, test_set):
         # Create model and load parameters.
@@ -264,36 +308,21 @@ class Seq2Seq(object):
             # This is a greedy decoder - outputs are just argmaxes of output_logits.
             outputs = [int(np.argmax(logit, axis=1)) for logit in output_logits]
             # If there is an EOS symbol in outputs, cut them at that point.
-            if utils.data.EOS_ID in outputs:
-                outputs = outputs[:outputs.index(utils.data.EOS_ID)]
+            if self.EOS_ID in outputs:
+                outputs = outputs[:outputs.index(self.EOS_ID)]
             # Print out French sentence corresponding to outputs.
             print(" ".join([output_id_to_token[output] for output in outputs]))
             print("> ", end="")
             sys.stdout.flush()
 
-    def predict(self, inputs):
-        bucket_id = len(self.buckets) - 1
-        for i, bucket in enumerate(self.buckets):
-            if bucket[0] >= len(inputs):
-                bucket_id = i
-                break
-
-        encoder_inputs, decoder_inputs, target_weights = self.get_batch({
-            bucket_id: [(inputs, [])]
-        }, bucket_id)
-
-        _, _, output_logits = self.model.step(
-            self.session,
-            encoder_inputs,
-            decoder_inputs,
-            target_weights,
-            bucket_id,
-            True
-        )
-
-        outputs = [int(np.argmax(logit, axis=1)) for logit in output_logits]
-
 
 def train():
+    input_vocab = load("diag_vocab.pkl")
+    output_vocab = load("drug_vocab.pkl")
+    test_set = load("mimic_episodes_index_test.pkl")
     train_set = load("mimic_episodes_index_train.pkl")
+    seq2seq = Seq2Seq()
+    seq2seq.load_data(input_vocab, output_vocab, train_set, test_set)
+    seq2seq.fit()
+
 
