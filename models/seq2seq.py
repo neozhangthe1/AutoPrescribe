@@ -123,7 +123,7 @@ class Seq2Seq(object):
     def load(self):
         self.model = self.create_model(True)
         
-    def get_batch(self, data, bucket_id):
+    def get_batch(self, data, bucket_id, sample=True):
         """Get a random batch of data from the specified bucket, prepare for step.
         To feed data in step(..) it must be a list of batch-major vectors, while
         data here contains single length-major cases. So the main logic of this
@@ -141,19 +141,30 @@ class Seq2Seq(object):
 
         # Get a random batch of encoder and decoder inputs from data,
         # pad them if needed, reverse encoder inputs and add GO to decoder.
-        for _ in range(min(self.batch_size, len(data[bucket_id]))):
-            encoder_input, decoder_input = copy.deepcopy(random.choice(data[bucket_id]))
-            random.shuffle(encoder_input)
-            random.shuffle(decoder_input)
+        if sample:
+            for _ in range(min(self.batch_size)):
+                encoder_input, decoder_input = copy.deepcopy(random.choice(data[bucket_id]))
+                random.shuffle(encoder_input)
+                random.shuffle(decoder_input)
 
-            # Encoder inputs are padded and then reversed.
-            encoder_pad = [self.PAD_ID] * (encoder_size - len(encoder_input))
-            encoder_inputs.append(list(encoder_input + encoder_pad))
+                # Encoder inputs are padded and then reversed.
+                encoder_pad = [self.PAD_ID] * (encoder_size - len(encoder_input))
+                encoder_inputs.append(list(encoder_input + encoder_pad))
 
-            # Decoder inputs get an extra "GO" symbol, and are padded then.
-            decoder_pad_size = decoder_size - len(decoder_input) - 2
-            decoder_inputs.append([self.GO_ID] + decoder_input + [self.EOS_ID] +
-                                  [self.PAD_ID] * decoder_pad_size)
+                # Decoder inputs get an extra "GO" symbol, and are padded then.
+                decoder_pad_size = decoder_size - len(decoder_input) - 2
+                decoder_inputs.append([self.GO_ID] + decoder_input + [self.EOS_ID] +
+                                      [self.PAD_ID] * decoder_pad_size)
+        else:
+            for encoder_input, decoder_input in data[bucket_id]:
+                # Encoder inputs are padded and then reversed.
+                encoder_pad = [self.PAD_ID] * (encoder_size - len(encoder_input))
+                encoder_inputs.append(list(encoder_input + encoder_pad))
+
+                # Decoder inputs get an extra "GO" symbol, and are padded then.
+                decoder_pad_size = decoder_size - len(decoder_input) - 2
+                decoder_inputs.append([self.GO_ID] + decoder_input + [self.EOS_ID] +
+                                      [self.PAD_ID] * decoder_pad_size)
 
         # Now we create batch-major vectors from the data selected above.
         batch_encoder_inputs, batch_decoder_inputs, batch_weights = [], [], []
