@@ -5,7 +5,6 @@ from __future__ import print_function
 import logging
 import math
 import os
-import pickle
 import random
 import sys
 import time
@@ -14,8 +13,8 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.models.rnn.translate import seq2seq_model
 from utils.data import get_model_path, load
-import utils.data
 from utils.eval import Evaluator
+import copy
 
 # We use a number of buckets and pad to the closest one for efficiency.
 # See seq2seq_model.Seq2SeqModel for details of how they work.
@@ -27,9 +26,9 @@ class Seq2Seq(object):
                  lr=0.5,
                  lr_decay=0.99,
                  max_gradient_norm=5.0,
-                 batch_size=10,
-                 size=1024,
-                 num_layers=3,
+                 batch_size=20,
+                 size=256,
+                 num_layers=2,
                  num_samples=512,
                  steps_per_checkpoint=200,
                  use_fp16=False,
@@ -40,7 +39,7 @@ class Seq2Seq(object):
         self.ouput_vocab = None
         self.input_vocab_size = 0
         self.output_vocab_size = 0
-        self.session = tf.Session()
+        self.session = tf.InteractiveSession()
         self.lr = lr
         self.lr_decay = lr_decay
         self.max_gradient_norm = max_gradient_norm,
@@ -97,6 +96,8 @@ class Seq2Seq(object):
     def create_model(self, forward_only):
         """Create translation model and initialize or load parameters in session."""
         dtype = tf.float16 if self.use_fp16 else tf.float32
+        print("Creating %d layers of %d units." % (self.num_layers, self.size))
+
         model = seq2seq_model.Seq2SeqModel(
             self.input_vocab_size,
             self.output_vocab_size,
@@ -116,6 +117,7 @@ class Seq2Seq(object):
         else:
             print("Created model with fresh parameters.")
             self.session.run(tf.initialize_all_variables())
+        self.model = model
         return model
 
     def load(self):
@@ -139,8 +141,8 @@ class Seq2Seq(object):
 
         # Get a random batch of encoder and decoder inputs from data,
         # pad them if needed, reverse encoder inputs and add GO to decoder.
-        for _ in range(self.batch_size):
-            encoder_input, decoder_input = random.choice(data[bucket_id])
+        for _ in range(min(self.batch_size, len(data[bucket_id]))):
+            encoder_input, decoder_input = copy.deepcopy(random.choice(data[bucket_id]))
             random.shuffle(encoder_input)
             random.shuffle(decoder_input)
 
@@ -149,9 +151,8 @@ class Seq2Seq(object):
             encoder_inputs.append(list(encoder_input + encoder_pad))
 
             # Decoder inputs get an extra "GO" symbol, and are padded then.
-            decoder_input.append(self.EOS_ID)
-            decoder_pad_size = decoder_size - len(decoder_input) - 1
-            decoder_inputs.append([self.GO_ID] + decoder_input +
+            decoder_pad_size = decoder_size - len(decoder_input) - 2
+            decoder_inputs.append([self.GO_ID] + decoder_input + [self.EOS_ID] +
                                   [self.PAD_ID] * decoder_pad_size)
 
         # Now we create batch-major vectors from the data selected above.
@@ -180,13 +181,11 @@ class Seq2Seq(object):
                 if length_idx == decoder_size - 1 or target == self.PAD_ID:
                     batch_weight[batch_idx] = 0.0
             batch_weights.append(batch_weight)
-        return batch_encoder_inputs, batch_decoder_inputs, batch_weights
+        return batch_encoder_inputs, batch_decoder_inputs, batch_weights, encoder_inputs, decoder_inputs
 
     def fit(self):
         # Create model.
-        print("Creating %d layers of %d units." % (self.num_layers, self.size))
-        model = self.create_model(False)
-
+        model = self.model
         train_bucket_sizes = [len(self.train_set[b]) for b in range(len(self.buckets))]
         train_total_size = float(sum(train_bucket_sizes))
 
@@ -205,7 +204,7 @@ class Seq2Seq(object):
 
             # Get a batch and make a step.
             start_time = time.time()
-            encoder_inputs, decoder_inputs, target_weights = self.get_batch(self.train_set, bucket_id)
+            encoder_inputs, decoder_inputs, target_weights, encoder_inputs, decoder_inputs = self.get_batch(self.train_set, bucket_id)
             _, step_loss, _ = model.step(self.session, encoder_inputs, decoder_inputs, target_weights, bucket_id, False)
             step_time += (time.time() - start_time) / self.steps_per_checkpoint
             loss += step_loss / self.steps_per_checkpoint
@@ -234,7 +233,7 @@ class Seq2Seq(object):
                     if len(self.dev_set[bucket_id]) == 0:
                         print("eval: empty bucket %d" % (bucket_id))
                         continue
-                    encoder_inputs, decoder_inputs, target_weights = self.get_batch(self.dev_set, bucket_id)
+                    encoder_inputs, decoder_inputs, target_weights, encoder_inputs, decoder_inputs = self.get_batch(self.dev_set, bucket_id)
                     _, eval_loss, _ = model.step(self.session, encoder_inputs, decoder_inputs,
                                                  target_weights, bucket_id, True)
                     eval_ppx = math.exp(float(eval_loss)) if eval_loss < 300 else float("inf")
@@ -255,7 +254,7 @@ class Seq2Seq(object):
                 bucket_id = i
                 break
 
-        encoder_inputs, decoder_inputs, target_weights = self.get_batch({
+        encoder_inputs, decoder_inputs, target_weights, encoder_inputs, decoder_inputs = self.get_batch({
             bucket_id: [(inputs, [])]
         }, bucket_id)
 
@@ -300,8 +299,9 @@ class Seq2Seq(object):
                 logging.warning("Sentence truncated: %s", pair[0])
 
             # Get a 1-element batch to feed the sentence to the model.
-            encoder_inputs, decoder_inputs, target_weights = self.get_batch(
-                    {bucket_id: [(token_ids, [])]}, bucket_id)
+            encoder_inputs, decoder_inputs, target_weights, encoder_inputs, decoder_inputs = self.get_batch(
+                    {bucket_id: [(token_ids, [])]}, bucket_id
+            )
             # Get output logits for the sentence.
             _, _, output_logits = model.step(self.session, encoder_inputs, decoder_inputs,
                                              target_weights, bucket_id, True)
@@ -323,6 +323,7 @@ def train():
     train_set = load("mimic_episodes_index_train.pkl")
     seq2seq = Seq2Seq()
     seq2seq.load_data(input_vocab, output_vocab, train_set, test_set)
+    model = seq2seq.create_model(False)
     seq2seq.fit()
 
 
