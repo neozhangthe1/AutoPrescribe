@@ -1,5 +1,5 @@
 from gensim.models import Word2Vec
-from utils.data import load, dump, get_path
+from utils.data import load, dump, get_path, get_model_path
 import random
 
 
@@ -30,10 +30,10 @@ class Embedding(object):
             samples.append(outputs)
         self.samples = samples
         self.model = Word2Vec(samples, size=100, window=5, min_count=5, workers=4)
-        self.model.save(get_path("mimic.emb"))
+        self.model.save(get_model_path("mimic.emb"))
 
     def load(self):
-        self.model = Word2Vec.load(get_path("mimic.emb"))
+        self.model = Word2Vec.load(get_model_path("mimic.emb"))
 
     def predict(self, inputs):
         outputs = []

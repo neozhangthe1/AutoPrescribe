@@ -3,10 +3,26 @@ import os
 
 
 directory = "data/"
+model_directory = "build/"
+
+_PAD = b"_PAD"
+_GO = b"_GO"
+_EOS = b"_EOS"
+_UNK = b"_UNK"
+_START_VOCAB = [_PAD, _GO, _EOS, _UNK]
+
+PAD_ID = 4127
+GO_ID = 4128
+EOS_ID = 4129
+UNK_ID = 4130
 
 
 def get_path(path):
     return os.path.join(directory, path)
+
+
+def get_model_path(path):
+    return os.path.join(model_directory, path)
 
 
 def clean_data():
