@@ -71,7 +71,7 @@ class Seq2Seq(object):
         self.input_vocab_size = len(input_vocab)
         self.output_vocab_size = len(output_vocab) + 4
         self.train_set = self.read_data(train_set)
-        self.dev_set = self.read_data(test_set, 100)
+        self.dev_set = self.read_data(test_set, 20)
 
         self.PAD_ID = self.output_vocab_size - 1
         self.GO_ID = self.PAD_ID - 1
@@ -123,7 +123,7 @@ class Seq2Seq(object):
     def load(self):
         self.model = self.create_model(True)
         
-    def get_batch(self, data, bucket_id, sample=True):
+    def get_batch(self, data, bucket_id, shuffle=True):
         """Get a random batch of data from the specified bucket, prepare for step.
         To feed data in step(..) it must be a list of batch-major vectors, while
         data here contains single length-major cases. So the main logic of this
@@ -138,33 +138,27 @@ class Seq2Seq(object):
         """
         encoder_size, decoder_size = self.buckets[bucket_id]
         encoder_inputs, decoder_inputs = [], []
+        batch_size = min(self.batch_size, len(data[bucket_id]))
 
         # Get a random batch of encoder and decoder inputs from data,
         # pad them if needed, reverse encoder inputs and add GO to decoder.
-        if sample:
-            for _ in range(min(self.batch_size)):
+
+        for i in range(batch_size):
+            if shuffle:
                 encoder_input, decoder_input = copy.deepcopy(random.choice(data[bucket_id]))
                 random.shuffle(encoder_input)
                 random.shuffle(decoder_input)
+            else:
+                encoder_input, decoder_input = copy.deepcopy(data[bucket_id][i])
 
-                # Encoder inputs are padded and then reversed.
-                encoder_pad = [self.PAD_ID] * (encoder_size - len(encoder_input))
-                encoder_inputs.append(list(encoder_input + encoder_pad))
+            # Encoder inputs are padded and then reversed.
+            encoder_pad = [self.PAD_ID] * (encoder_size - len(encoder_input))
+            encoder_inputs.append(list(encoder_input + encoder_pad))
 
-                # Decoder inputs get an extra "GO" symbol, and are padded then.
-                decoder_pad_size = decoder_size - len(decoder_input) - 2
-                decoder_inputs.append([self.GO_ID] + decoder_input + [self.EOS_ID] +
-                                      [self.PAD_ID] * decoder_pad_size)
-        else:
-            for encoder_input, decoder_input in data[bucket_id]:
-                # Encoder inputs are padded and then reversed.
-                encoder_pad = [self.PAD_ID] * (encoder_size - len(encoder_input))
-                encoder_inputs.append(list(encoder_input + encoder_pad))
-
-                # Decoder inputs get an extra "GO" symbol, and are padded then.
-                decoder_pad_size = decoder_size - len(decoder_input) - 2
-                decoder_inputs.append([self.GO_ID] + decoder_input + [self.EOS_ID] +
-                                      [self.PAD_ID] * decoder_pad_size)
+            # Decoder inputs get an extra "GO" symbol, and are padded then.
+            decoder_pad_size = decoder_size - len(decoder_input) - 2
+            decoder_inputs.append([self.GO_ID] + decoder_input + [self.EOS_ID] +
+                                  [self.PAD_ID] * decoder_pad_size)
 
         # Now we create batch-major vectors from the data selected above.
         batch_encoder_inputs, batch_decoder_inputs, batch_weights = [], [], []
@@ -173,17 +167,17 @@ class Seq2Seq(object):
         for length_idx in range(encoder_size):
             batch_encoder_inputs.append(
                     np.array([encoder_inputs[batch_idx][length_idx]
-                              for batch_idx in range(self.batch_size)], dtype=np.int32))
+                              for batch_idx in range(batch_size)], dtype=np.int32))
 
         # Batch decoder inputs are re-indexed decoder_inputs, we create weights.
         for length_idx in range(decoder_size):
             batch_decoder_inputs.append(
                     np.array([decoder_inputs[batch_idx][length_idx]
-                              for batch_idx in range(self.batch_size)], dtype=np.int32))
+                              for batch_idx in range(batch_size)], dtype=np.int32))
 
             # Create target_weights to be 0 for targets that are padding.
-            batch_weight = np.ones(self.batch_size, dtype=np.float32)
-            for batch_idx in range(self.batch_size):
+            batch_weight = np.ones(batch_size, dtype=np.float32)
+            for batch_idx in range(batch_size):
                 # We set weight to 0 if the corresponding target is a PAD symbol.
                 # The corresponding target is decoder_input shifted by 1 forward.
                 target = None
@@ -192,11 +186,12 @@ class Seq2Seq(object):
                 if length_idx == decoder_size - 1 or target == self.PAD_ID:
                     batch_weight[batch_idx] = 0.0
             batch_weights.append(batch_weight)
-        return batch_encoder_inputs, batch_decoder_inputs, batch_weights, encoder_inputs, decoder_inputs
+        return batch_encoder_inputs, batch_decoder_inputs, batch_weights
 
     def fit(self):
         # Create model.
         model = self.model
+        model.batch_size = self.batch_size
         train_bucket_sizes = [len(self.train_set[b]) for b in range(len(self.buckets))]
         train_total_size = float(sum(train_bucket_sizes))
 
@@ -215,7 +210,7 @@ class Seq2Seq(object):
 
             # Get a batch and make a step.
             start_time = time.time()
-            encoder_inputs, decoder_inputs, target_weights, encoder_inputs, decoder_inputs = self.get_batch(self.train_set, bucket_id)
+            encoder_inputs, decoder_inputs, target_weights = self.get_batch(self.train_set, bucket_id)
             _, step_loss, _ = model.step(self.session, encoder_inputs, decoder_inputs, target_weights, bucket_id, False)
             step_time += (time.time() - start_time) / self.steps_per_checkpoint
             loss += step_loss / self.steps_per_checkpoint
@@ -244,28 +239,33 @@ class Seq2Seq(object):
                     if len(self.dev_set[bucket_id]) == 0:
                         print("eval: empty bucket %d" % (bucket_id))
                         continue
-                    encoder_inputs, decoder_inputs, target_weights, encoder_inputs, decoder_inputs = self.get_batch(self.dev_set, bucket_id)
+                    encoder_inputs, decoder_inputs, target_weights = self.get_batch(self.dev_set, bucket_id)
                     _, eval_loss, _ = model.step(self.session, encoder_inputs, decoder_inputs,
                                                  target_weights, bucket_id, True)
                     eval_ppx = math.exp(float(eval_loss)) if eval_loss < 300 else float("inf")
                     print("eval: bucket %d perplexity %.2f" % (bucket_id, eval_ppx))
-                    to_predict = self.dev_set[bucket_id][0]
-                    outputs = self.predict(to_predict[0])
-                    precision, recall = Evaluator.get_result(to_predict[1], outputs)
-                    print("inputs: ", to_predict[0])
-                    print("target: ", to_predict[1])
-                    print("output: ", outputs)
-                    print("pre", precision, "rec", recall)
+                    # to_predict = self.dev_set[bucket_id][0]
+                    # outputs = self.predict(to_predict[0])
+                    # precision, recall = Evaluator.get_result(to_predict[1], outputs)
+                    # print("inputs: ", to_predict[0])
+                    # print("target: ", to_predict[1])
+                    # print("output: ", outputs)
+                    # print("pre", precision, "rec", recall)
                 sys.stdout.flush()
 
-    def predict(self, inputs):
+    def predict(self, inputs, output_size=None):
         bucket_id = len(self.buckets) - 1
+        self.model.batch_size = 1
         for i, bucket in enumerate(self.buckets):
             if bucket[0] >= len(inputs):
-                bucket_id = i
-                break
+                if output_size is None:
+                    bucket_id = i
+                    break
+                elif bucket[1] >= output_size:
+                    bucket_id = i
+                    break
 
-        encoder_inputs, decoder_inputs, target_weights, encoder_inputs, decoder_inputs = self.get_batch({
+        encoder_inputs, decoder_inputs, target_weights = self.get_batch({
             bucket_id: [(inputs, [])]
         }, bucket_id)
 
@@ -283,7 +283,7 @@ class Seq2Seq(object):
 
     def decode(self, test_set):
         # Create model and load parameters.
-        model = self.create_model(True)
+        model = self.model
         model.batch_size = 1  # We decode one sentence at a time.
 
         # Load vocabularies.
@@ -310,7 +310,7 @@ class Seq2Seq(object):
                 logging.warning("Sentence truncated: %s", pair[0])
 
             # Get a 1-element batch to feed the sentence to the model.
-            encoder_inputs, decoder_inputs, target_weights, encoder_inputs, decoder_inputs = self.get_batch(
+            encoder_inputs, decoder_inputs, target_weights = self.get_batch(
                     {bucket_id: [(token_ids, [])]}, bucket_id
             )
             # Get output logits for the sentence.
@@ -338,3 +338,19 @@ def train():
     seq2seq.fit()
 
 
+def test(seq2seq):
+    input_vocab = load("diag_vocab.pkl")
+    output_vocab = load("drug_vocab.pkl")
+    test_set = load("mimic_episodes_index_test.pkl")
+    train_set = load("mimic_episodes_index_train.pkl")
+    seq2seq = Seq2Seq()
+    seq2seq.load_data(input_vocab, output_vocab, train_set, test_set)
+    seq2seq.load()
+    for t in test_set:
+        outputs = seq2seq.predict(t[0])
+        print(outputs)
+        precision, recall = Evaluator.get_result(set(t[1]), set(outputs) - {seq2seq.PAD_ID, seq2seq.GO_ID, seq2seq.EOS_ID, seq2seq.UNK_ID})
+        print("inputs: ", t[0])
+        print("target: ", t[1])
+        print("output: ", outputs)
+        print("pre", precision, "rec", recall)
