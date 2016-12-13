@@ -1,6 +1,7 @@
 from utils.data import load, dump
 from models import MostFreqMatch, Embedding, GoldenRule
 from collections import defaultdict as dd
+import numpy as np
 
 
 class Evaluator(object):
@@ -18,17 +19,33 @@ class Evaluator(object):
             self.index_to_drug[drug_vocab[drug]] = drug
 
     def eval(self, model):
+        precisions, recalls = [], []
+        cnt = 0
         for pair in self.test_set:
             outputs = set(pair[1])
             prediction = set(model.predict(pair[0]))
             precision, recall = self.get_result(outputs, prediction)
-            print(precision, recall)
+            precisions.append(precision)
+            recalls.append(recall)
+            if cnt % 1000 == 0:
+                print(cnt, precision, recall)
+                print(np.mean(precisions), np.mean(recalls))
+            cnt += 1
+        print(np.mean(precisions), np.mean(recalls))
 
     def eval_golden(self, model):
+        precisions, recalls = [], []
+        cnt = 0
         for pair in self.test_set:
             prediction = model.predict(pair[0])
             precision, recall = self.get_golden_eval(pair[0], prediction)
-            print(precision, recall)
+            precisions.append(precision)
+            recalls.append(recall)
+            if cnt % 1000 == 0:
+                print(cnt, precision, recall)
+                print(np.mean(precisions), np.mean(recalls))
+            cnt += 1
+        print(np.mean(precisions), np.mean(recalls))
 
     @staticmethod
     def get_result(truth, prediction):
@@ -37,9 +54,11 @@ class Evaluator(object):
         fn = len(truth - prediction)
         precision = 0 if (tp + fp) == 0 else float(tp / (tp + fp))
         recall = 0 if (tp + fn) == 0 else float(tp / (tp + fn))
+
         return precision, recall
     
     def get_golden_eval(self, inputs, prediction):
+        prediction = set(prediction)
         all_output = []
         mapping = dd(list)
         for c1 in inputs:
