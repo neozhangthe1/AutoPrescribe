@@ -122,12 +122,15 @@ class ICD9(Node):
 class ICD9L(object):
     def __init__(self, f_name):
         self.codes = []
+        self.cache = {}
         with codecs.open(f_name, "r", "utf-8") as f_in:
             for line in f_in:
                 x = line.strip().split()
                 self.codes.append(x[0])
 
     def get_range(self, lower, upper):
+        if (lower, upper) in self.cache:
+            return self.cache[(lower, upper)]
         response = []
         flag = False
         for code in self.codes:
@@ -138,9 +141,12 @@ class ICD9L(object):
             if code >= lower:
                 flag = True
                 response.append(code)
+        self.cache[(lower, upper)] = response
         return response
 
     def get_prefix(self, prefix):
+        if prefix in self.cache:
+            return self.cache[prefix]
         response = []
         flag = False
         for code in self.codes:
@@ -152,6 +158,7 @@ class ICD9L(object):
             if prefix == code[:len(prefix)]:
                 response.append(code)
                 flag = True
+        self.cache[prefix] = response
         return response
 
     def get_children(self, query):
