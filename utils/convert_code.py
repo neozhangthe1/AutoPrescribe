@@ -1,6 +1,9 @@
 from utils.icd9 import ICD9
 from collections import defaultdict as dd
-from utils.data import dump, load
+from utils.data import dump, load, get_path
+import csv
+import codecs
+
 
 tree = ICD9('data/icd9.json')
 
@@ -22,8 +25,62 @@ def get_leaves(code):
     return [n.code for n in node.leaves]
 
 
+def load_rx_to_ndc():
+    drugs = {}
+    in_to_drug = dd(list)
+    in_to_pin = dd(list)
+    with codecs.open(get_path("rxnorm.csv"), "r", "utf-8") as f_in:
+        reader = csv.reader(f_in)
+        cnt = 0
+        for row in reader:
+            if cnt != 0:
+                drug = {
+                    "rx": row[0],
+                    "tty": row[1],
+                    "ndc": [],
+                    "name": row[3],
+                    "va_classes": row[4],
+                    "treating": row[5].split(";"),
+                    "ingredients": row[6].split(";")
+                }
+                if row[2] != '':
+                    for code in row[2].strip("[").strip("]").split(","):
+                        if code is not None and code != 'None':
+                            drug["ndc"].append(code.strip().strip("'"))
+                drugs[row[0]] = drug
+
+                for ing in drug["ingredients"]:
+                    in_to_drug[ing].append(drug)
+                    if drug["tty"] == "PIN":
+                        in_to_pin[ing].append(drug["rx"])
+            cnt += 1
+
+    rx_to_ndc = dd(list)
+    for rx in drugs:
+        for ndc in drugs[rx]["ndc"]:
+            rx_to_ndc[rx].append(ndc)
+
+    for ing in in_to_drug:
+        for drug in in_to_drug[ing]:
+            for ndc in drug["ndc"]:
+                rx_to_ndc[ing].append(ndc)
+
+    for ing in in_to_pin:
+        for pin in in_to_pin[ing]:
+            for ndc in rx_to_ndc[ing]:
+                rx_to_ndc[pin].append(ndc)
+
+    ndc_to_rx = dd(list)
+    for rx in rx_to_ndc:
+        for ndc in rx_to_ndc[rx]:
+            ndc_to_rx[ndc].append(rx)
+
+    dump(rx_to_ndc, "rx_to_ndc.pkl")
+    dump(ndc_to_rx, "ndc_to_rx.pkl")
+
+
 def build_ground_truth():
-    rx_to_ndc = load("rx_to_ndc.npy")
+    rx_to_ndc = load("rx_to_ndc.pkl")
     rx_to_icd = dd(list)
     icd_to_ndc = dd(list)
 
@@ -43,4 +100,28 @@ def build_ground_truth():
                 for code in codes:
                     icd_to_ndc[code].append(ndc)
 
-    dump(icd_to_ndc, "icd_to_ndc.pkl")
+    dump(dict(icd_to_ndc), "icd_to_ndc.pkl")
+
+    ndc_to_icd = dd(list)
+    for icd in icd_to_ndc:
+        for ndc in icd_to_ndc[icd]:
+            ndc_to_icd[ndc].append(icd)
+    dump(dict(ndc_to_icd), "ndc_to_icd.pkl")
+
+
+def convert_ground_truth():
+    gt = load("icd_to_ndc1.pkl")
+    diag_vocab = load("diag_vocab.pkl")
+    drug_vocab = load("drug_vocab.pkl")
+    gt_index = {}
+    for code in gt:
+        if code.replace(".", "") in diag_vocab:
+            diag = diag_vocab[code.replace(".", "")]
+            gt_index[diag] = []
+            for code1 in gt[code]:
+                if code1 in drug_vocab:
+                    drug = drug_vocab[code1]
+                    gt_index[diag].append(drug)
+    dump(gt_index, "icd_to_ndc_index.pkl")
+
+
