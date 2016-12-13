@@ -26,31 +26,8 @@ class Evaluator(object):
 
     def eval_golden(self, model):
         for pair in self.test_set:
-            all_output = []
-            mapping = dd(list)
-            for c1 in pair[0]:
-                if c1 in self.golden_rule:
-                    all_output.extend(self.golden_rule[c1])
-                    for c2 in self.golden_rule[c1]:
-                        mapping[c2].append(c1)
-            all_output = set(all_output)
-            prediction = set(model.predict(pair[0]))
-            tp = prediction.intersection(all_output)
-
-            precision = 0 if len(prediction) == 0 else float(len(tp)) / len(prediction)
-
-            coverage = []
-            for c in prediction:
-                if c in mapping:
-                    coverage.extend(mapping[c])
-            tp = set(coverage).intersection(set(pair[0]))
-            recall = 0 if len(pair[0]) == 0 else float(len(tp)) / len(pair[0])
-
-            print([self.index_to_diag[c] for c in pair[0]])
-            print([self.index_to_diag[c] for c in coverage])
-            print([self.index_to_drug[c] for c in all_output])
-            print([self.index_to_drug[c] for c in prediction])
-
+            prediction = model.predict(pair[0])
+            precision, recall = self.get_golden_eval(pair[0], prediction)
             print(precision, recall)
 
     @staticmethod
@@ -61,12 +38,34 @@ class Evaluator(object):
         precision = 0 if (tp + fp) == 0 else float(tp / (tp + fp))
         recall = 0 if (tp + fn) == 0 else float(tp / (tp + fn))
         return precision, recall
+    
+    def get_golden_eval(self, inputs, prediction):
+        all_output = []
+        mapping = dd(list)
+        for c1 in inputs:
+            if c1 in self.golden_rule:
+                all_output.extend(self.golden_rule[c1])
+                for c2 in self.golden_rule[c1]:
+                    mapping[c2].append(c1)
+        all_output = set(all_output)
+        tp = prediction.intersection(all_output)
+
+        precision = 0 if len(prediction) == 0 else float(len(tp)) / len(prediction)
+
+        coverage = []
+        for c in prediction:
+            if c in mapping:
+                coverage.extend(mapping[c])
+        tp = set(coverage).intersection(set(inputs))
+        recall = 0 if len(inputs) == 0 else float(len(tp)) / len(inputs)
+
+        return precision, recall
 
 
 def eval_freq():
-    evaluator = Evaluator()
     mfm = MostFreqMatch()
     mfm.load()
+    evaluator = Evaluator()
     evaluator.eval(mfm)
     evaluator.eval_golden(mfm)
 

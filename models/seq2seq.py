@@ -339,6 +339,7 @@ def train():
 
 
 def test(seq2seq):
+    evaluator = Evaluator()
     input_vocab = load("diag_vocab.pkl")
     output_vocab = load("drug_vocab.pkl")
     test_set = load("mimic_episodes_index_test.pkl")
@@ -349,7 +350,7 @@ def test(seq2seq):
     for t in test_set:
         outputs = seq2seq.predict(t[0])
         print(outputs, len(t[1]))
-        precision, recall = Evaluator.get_result(set(t[1]), set(outputs) - {seq2seq.PAD_ID, seq2seq.GO_ID, seq2seq.EOS_ID, seq2seq.UNK_ID})
+        precision, recall = evaluator.get_golden_eval(t[1], list(set(outputs) - {seq2seq.PAD_ID, seq2seq.GO_ID, seq2seq.EOS_ID, seq2seq.UNK_ID}))
         print("inputs: ", t[0])
         print("target: ", t[1])
         print("output: ", outputs)

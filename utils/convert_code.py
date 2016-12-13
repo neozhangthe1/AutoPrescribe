@@ -123,6 +123,7 @@ def build_ground_truth():
                 codes = icd9.get_children(icd)
                 for code in codes:
                     icd_to_ndc[code].append(ndc)
+
     for icd in icd_to_ndc:
         icd_to_ndc[icd] = list(set(icd_to_ndc[icd]))
     dump(dict(icd_to_ndc), "icd_to_ndc.pkl")
