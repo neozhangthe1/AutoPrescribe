@@ -1,5 +1,15 @@
 import json
 from collections import *
+import codecs
+
+
+def normalize_icd(code):
+    if "." in code:
+        x = code.split(".")
+        if len(x[0]) < 3:
+            code = "0" * (3-len(x[0])) + code
+        code = code.replace(".", "")
+    return code
 
 
 class Node(object):
@@ -107,6 +117,49 @@ class ICD9(Node):
             node.parent = prev_node
             prev_node.add_child(node)
             prev_node = node
+
+
+class ICD9L(object):
+    def __init__(self, f_name):
+        self.codes = []
+        with codecs.open(f_name, "r", "utf-8") as f_in:
+            for line in f_in:
+                x = line.strip().split()
+                self.codes.append(x[0])
+
+    def get_range(self, lower, upper):
+        response = []
+        flag = False
+        for code in self.codes:
+            if flag:
+                if code > upper:
+                    break
+                response.append(code)
+            if code >= lower:
+                flag = True
+                response.append(code)
+        return response
+
+    def get_prefix(self, prefix):
+        response = []
+        flag = False
+        for code in self.codes:
+            if flag:
+                if prefix == code[:len(prefix)]:
+                    response.append(code)
+                else:
+                    break
+            if prefix == code[:len(prefix)]:
+                response.append(code)
+                flag = True
+        return response
+
+    def get_children(self, query):
+        if "-" in query:
+            lower, upper = tuple(query.split("-"))
+            return self.get_range(normalize_icd(lower), normalize_icd(upper))
+        else:
+            return self.get_prefix(normalize_icd(query))
 
 
 if __name__ == '__main__':

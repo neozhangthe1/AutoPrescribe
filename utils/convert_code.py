@@ -1,16 +1,27 @@
-from utils.icd9 import ICD9
+from utils.icd9 import ICD9L, ICD9
 from collections import defaultdict as dd
 from utils.data import dump, load, get_path
 import csv
 import codecs
 
 
-tree = ICD9('data/icd9.json')
+tree = ICD9("data/icd9.json")
+icd9 = ICD9L('data/icd9.txt')
+cache = {}
 
 
 def get_leaves(code):
     if "-" in code:
         code = code.split(".")[0]
+
+    if code in cache:
+        return cache[code]
+
+    if "|" in code:
+        res = [get_leaves(c) for c in code.split("|")]
+        cache[code] = res[0] + res[1]
+        return cache[code]
+
     node = tree.find(code)
     if node is None:
         print(code)
@@ -18,11 +29,24 @@ def get_leaves(code):
             x = code.split("-")
             node = tree.find(x[0])
         else:
-            node = tree.find("V" + code)
+            node = tree.find("0" + code)
     if node is None:
         print(code, "!")
-        return [code]
-    return [n.code for n in node.leaves]
+        cache[code] = [code]
+        return cache[code]
+    cache[code] = [n.code for n in node.leaves]
+    if "-" not in code:
+        cache[code] += [code]
+    return cache[code]
+
+
+def normalize_icd(code):
+    if "." in code:
+        x = code.split(".")
+        if len(x[0]) < 3:
+            code = "0" * (3-len(x[0])) + code
+        code = code.replace(".", "")
+    return code
 
 
 def load_rx_to_ndc():
@@ -96,32 +120,46 @@ def build_ground_truth():
     for rx in set(rx_to_icd.keys()).intersection(set(rx_to_ndc.keys())):
         for ndc in rx_to_ndc[rx]:
             for icd in rx_to_icd[rx]:
-                codes = get_leaves(icd)
+                codes = icd9.get_children(icd)
                 for code in codes:
                     icd_to_ndc[code].append(ndc)
-
+    for icd in icd_to_ndc:
+        icd_to_ndc[icd] = list(set(icd_to_ndc[icd]))
     dump(dict(icd_to_ndc), "icd_to_ndc.pkl")
 
     ndc_to_icd = dd(list)
     for icd in icd_to_ndc:
         for ndc in icd_to_ndc[icd]:
             ndc_to_icd[ndc].append(icd)
+    for ndc in ndc_to_icd:
+        ndc_to_icd[ndc] = list(set(ndc_to_icd[ndc]))
     dump(dict(ndc_to_icd), "ndc_to_icd.pkl")
 
 
 def convert_ground_truth():
-    gt = load("icd_to_ndc1.pkl")
+    gt = load("icd_to_ndc.pkl")
     diag_vocab = load("diag_vocab.pkl")
     drug_vocab = load("drug_vocab.pkl")
     gt_index = {}
-    for code in gt:
-        if code.replace(".", "") in diag_vocab:
-            diag = diag_vocab[code.replace(".", "")]
+    for c in gt:
+        code = normalize_icd(c)
+        if code in diag_vocab:
+            diag = diag_vocab[code]
             gt_index[diag] = []
-            for code1 in gt[code]:
+            for code1 in gt[c]:
                 if code1 in drug_vocab:
                     drug = drug_vocab[code1]
                     gt_index[diag].append(drug)
+    for icd in gt_index:
+        gt_index[icd] = list(set(gt_index[icd]))
     dump(gt_index, "icd_to_ndc_index.pkl")
+
+    ndc_to_icd = dd(list)
+    for icd in gt_index:
+        for ndc in gt_index[icd]:
+            ndc_to_icd[ndc].append(icd)
+    for ndc in ndc_to_icd:
+        ndc_to_icd[ndc] = list(set(ndc_to_icd[ndc]))
+    dump(dict(ndc_to_icd), "ndc_to_icd_index.pkl")
 
 
