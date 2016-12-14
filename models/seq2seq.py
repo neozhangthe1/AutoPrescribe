@@ -338,8 +338,7 @@ def train():
     seq2seq.fit()
 
 
-def test(seq2seq):
-    evaluator = Evaluator()
+def test():
     input_vocab = load("diag_vocab.pkl")
     output_vocab = load("drug_vocab.pkl")
     test_set = load("mimic_episodes_index_test.pkl")
@@ -347,6 +346,7 @@ def test(seq2seq):
     seq2seq = Seq2Seq()
     seq2seq.load_data(input_vocab, output_vocab, train_set, test_set)
     seq2seq.load()
+    evaluator = Evaluator()
     for t in test_set:
         outputs = seq2seq.predict(t[0])
         print(outputs, len(t[1]))
