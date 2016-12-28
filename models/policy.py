@@ -27,7 +27,87 @@ def jaccard(s1, s2):
         return intersection / union
 
 
-class Environment():
+class PolicyGradient():
+    def __init__(self):
+        self.session = tf.InteractiveSession()
+        self.train_set = []
+        self.dev_set = []
+        self.input_vocab = None
+        self.output_vocab = None
+        self.input_vocab_size = 0
+        self.output_vocab_size = 0
+
+        self.PAD_ID = 4127
+        self.GO_ID = 4128
+        self.EOS_ID = 4129
+        self.UNK_ID = 4130
+
+    def load_data(self, input_vocab, output_vocab, train_set, test_set):
+        self.input_vocab = input_vocab
+        self.output_vocab = output_vocab
+        self.input_vocab_size = len(input_vocab)
+        self.output_vocab_size = len(output_vocab) + 4
+        self.train_set = train_set
+        self.dev_set = test_set
+
+        self.PAD_ID = self.output_vocab_size - 1
+        self.GO_ID = self.PAD_ID - 1
+        self.EOS_ID = self.PAD_ID - 2
+        self.UNK_ID = self.PAD_ID - 3
+
+    def train(self):
+        env = Environment(self.session, self.input_vocab, self.output_vocab)
+        episode_history = deque(maxlen=1000)
+
+        while True:
+            for idx in range(len(self.train_set)):
+                state = env.load_episode(self.train_set[idx])
+                total_rewards = 0
+                t = 0
+                num_pos = 0
+                print(idx, env.input, env.output)
+
+                while True:
+                    if t > env.max_step: # and num_pos > 0:
+                        break
+                        # for t in range(env.max_step):
+                    action = env.solver.sampleAction(state.transpose(), env.mask.transpose())
+                    next_state, reward, done, flag = env.step(action)
+                    if flag:
+                        num_pos += 1
+                        print(t, "pos", action, num_pos, total_rewards)
+                    if t % 100 == 0:
+                        print(t, action, num_pos, total_rewards)
+
+                    total_rewards += reward
+                    env.solver.storeRollout(state, action, reward)
+
+                    state = next_state
+
+                    t += 1
+
+                    env.solver.updateModel()
+
+                    if done:
+                        print(total_rewards)
+                        break
+
+                env.solver.updateModel()
+                env.solver.cleanUp()
+
+                episode_history.append(total_rewards)
+                mean_rewards = np.mean(episode_history)
+
+                print("Episode {}".format(idx))
+                print("Finished after {} timesteps".format(t+1))
+                print("Reward for this episode: {}".format(total_rewards))
+                print("Average reward for last 100 episodes: {}".format(mean_rewards))
+                if mean_rewards >= 195.0 and len(episode_history) >= 100:
+                    print("Environment {} solved after {} episodes".format(env_name, idx+1))
+                    break
+
+
+class Environment(object):
     def __init__(self, sess, vocab_input, vocab_output):
         self.tf_session = sess
         self.vocab_input = vocab_input
@@ -57,7 +137,7 @@ class Environment():
         state_dim, hidden_dim, num_actions = self.state_dim, self.hidden_dim, self.num_actions
 
         def policy_network(states):
-            with tf.device('/gpu:2'):
+            with tf.device('/gpu:0'):
                 print("constructing policy network")
                 W1 = tf.get_variable("W1", [state_dim, hidden_dim], initializer=tf.random_normal_initializer())
                 b1 = tf.get_variable("b1", [hidden_dim], initializer=tf.constant_initializer(0))

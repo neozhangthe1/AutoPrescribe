@@ -36,7 +36,7 @@ class Seq2Seq(object):
         self.train_set = []
         self.dev_set = []
         self.input_vocab = None
-        self.ouput_vocab = None
+        self.output_vocab = None
         self.input_vocab_size = 0
         self.output_vocab_size = 0
         self.session = tf.InteractiveSession()
@@ -67,7 +67,7 @@ class Seq2Seq(object):
 
     def load_data(self, input_vocab, output_vocab, train_set, test_set):
         self.input_vocab = input_vocab
-        self.ouput_vocab = output_vocab
+        self.output_vocab = output_vocab
         self.input_vocab_size = len(input_vocab)
         self.output_vocab_size = len(output_vocab) + 4
         self.train_set = self.read_data(train_set)
@@ -347,11 +347,23 @@ def test():
     seq2seq.load_data(input_vocab, output_vocab, train_set, test_set)
     seq2seq.load()
     evaluator = Evaluator()
+    precisions = []
+    recalls = []
+    bleus = []
+    rogues = []
     for t in test_set:
         outputs = seq2seq.predict(t[0])
         print(outputs, len(t[1]))
-        precision, recall = evaluator.get_golden_eval(t[1], list(set(outputs) - {seq2seq.PAD_ID, seq2seq.GO_ID, seq2seq.EOS_ID, seq2seq.UNK_ID}))
+        precision, recall = evaluator.get_golden_eval(t[0], list(set(outputs) - {seq2seq.PAD_ID, seq2seq.GO_ID, seq2seq.EOS_ID, seq2seq.UNK_ID}))
+        precisions.append(precision)
+        recalls.append(recall)
+        bleu, rogue = evaluator.get_result(t[1], list(set(outputs) - {seq2seq.PAD_ID, seq2seq.GO_ID, seq2seq.EOS_ID, seq2seq.UNK_ID}))
+        bleus.append(bleu)
+        rogues.append(rogue)
         print("inputs: ", t[0])
         print("target: ", t[1])
         print("output: ", outputs)
         print("pre", precision, "rec", recall)
+        print("average", np.mean(precisions), np.mean(recalls))
+        print("bleu", bleu, "rogue", rogue)
+        print("average", np.mean(bleus), np.mean(rogues))

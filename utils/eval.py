@@ -1,7 +1,8 @@
 from utils.data import load, dump
-from models import MostFreqMatch, Embedding, GoldenRule
 from collections import defaultdict as dd
 import numpy as np
+
+from models import MostFreqMatch, Embedding, GoldenRule
 
 
 class Evaluator(object):
@@ -49,6 +50,8 @@ class Evaluator(object):
 
     @staticmethod
     def get_result(truth, prediction):
+        truth = set(truth)
+        prediction = set(prediction)
         tp = len(truth.intersection(prediction))
         fp = len(prediction - truth)
         fn = len(truth - prediction)
@@ -101,3 +104,18 @@ def eval_golden():
     golden = GoldenRule()
     evaluator.eval(golden)
     evaluator.eval_golden(golden)
+
+
+def eval_real():
+    test_set = load("mimic_episodes_index_test.pkl")
+    evaluator = Evaluator()
+    precisions, recalls = [], []
+    cnt = 0
+    for pair in test_set:
+        precision, recall = evaluator.get_golden_eval(pair[0], pair[1])
+        precisions.append(precision)
+        recalls.append(recall)
+        if cnt % 1000 == 0:
+            print(cnt, precision, recall)
+            print(np.mean(precisions), np.mean(recalls))
+        cnt += 1

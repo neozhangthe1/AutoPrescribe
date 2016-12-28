@@ -1,6 +1,8 @@
 import pickle
 import os
-
+import csv
+from collections import defaultdict as dd
+import codecs
 
 directory = "data/"
 model_directory = "build/"
@@ -75,6 +77,33 @@ def downgrade_pickle():
             with open(f+'1', "wb") as f_out:
                 pickle.dump(d, f_out, protocol=2)
 
+
+def load_rx_gpi_mapping():
+    with open(get_path("ndw_v_product.txt")) as f_in:
+        titles = next(f_in).strip().split("|")
+        for line in f_in:
+            pass
+
+
+def load_sutter():
+    cnt = 0
+    records = dd(lambda: dd(lambda: dd(list)))
+    with codecs.open("SUTTER_ORDER_MED_DETAIL_V1.tab", "r", encoding='utf-8', errors='ignore') as f_in:
+        next(f_in)
+        for line in f_in:
+            if cnt % 100000 == 0:
+                print(cnt, len(records), line)
+            cnt += 1
+            x = line.strip().split("\t")
+            records[x[0]][x[9]][x[1]].append(x)
+
+    rec = dict(records)
+    with open("sutter_prescription.pkl", "wb") as f_out:
+        pickle.dump(rec, f_out)
+
+    import json
+    with open("sutter_prescription.json", "w") as f_ouut:
+        json.dump(rec, f_out)
 
 def dump(obj, path):
     with open(get_path(path), "wb") as f_out:
