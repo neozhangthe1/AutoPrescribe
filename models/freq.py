@@ -17,7 +17,7 @@ class MostFreqMatch(object):
             sorted_freq = sorted(freq[tk].items(), key=lambda x: x[1], reverse=True)
             self.freq[tk] = sorted_freq
 
-        dump(dict(self.freq), "mimic_freq.pkl")
+        dump(dict(self.freq), "sutter_freq.pkl")
 
     def load(self, path="mimic_freq.pkl"):
         self.freq = load(path)
@@ -30,4 +30,12 @@ class MostFreqMatch(object):
                     outputs.append(tk[0])
         return list(set(outputs))
 
+
+def train():
+    input_vocab = load("sutter_diag_vocab.pkl")
+    output_vocab = load("sutter_drug_vocab_4.pkl")
+    test_set = load("sutter_encounters_4.pkl")[:1000000]
+    train_set = load("sutter_encounters_4.pkl")[1000000:]
+    mfm = MostFreqMatch(1)
+    mfm.fit(train_set)
 

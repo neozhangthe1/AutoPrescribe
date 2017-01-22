@@ -7,11 +7,17 @@ from models import MostFreqMatch, Embedding, GoldenRule
 
 class Evaluator(object):
 
-    def __init__(self):
-        self.test_set = load("mimic_episodes_index_test.pkl")
-        self.golden_rule = load("icd_to_ndc_index.pkl")
-        diag_vocab = load("diag_vocab.pkl")
-        drug_vocab = load("drug_vocab.pkl")
+    def __init__(self, ds="mimic"):
+        if ds == "mimic":
+            self.test_set = load("mimic_episodes_index_test.pkl")
+            self.golden_rule = load("icd_to_ndc_index.pkl")
+            diag_vocab = load("diag_vocab.pkl")
+            drug_vocab = load("drug_vocab.pkl")
+        elif ds == "sutter":
+            self.test_set = load("sutter_encounters_4.pkl")
+            self.golden_rule = load("icd_to_ndc_index.pkl")
+            diag_vocab = load("sutter_diag_vocab.pkl")
+            drug_vocab = load("sutter_drug_vocab_4.pkl")
         self.index_to_diag = {}
         self.index_to_drug = {}
         for diag in diag_vocab:
@@ -119,3 +125,5 @@ def eval_real():
             print(cnt, precision, recall)
             print(np.mean(precisions), np.mean(recalls))
         cnt += 1
+
+
