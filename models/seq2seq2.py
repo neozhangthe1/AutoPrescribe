@@ -4,7 +4,7 @@ from keras.layers import Dense, Dropout, TimeDistributed, Bidirectional, Input
 from keras.models import Sequential, Model
 from recurrentshop import LSTMCell, RecurrentContainer
 
-from .cells import LSTMDecoderCell, AttentionDecoderCell
+from models.cells import LSTMDecoderCell, AttentionDecoderCell
 
 import numpy as np
 
