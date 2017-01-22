@@ -33,9 +33,9 @@ class MostFreqMatch(object):
 
 def train():
     input_vocab = load("sutter_diag_vocab.pkl")
-    output_vocab = load("sutter_drug_vocab_4.pkl")
-    test_set = load("sutter_encounters_4.pkl")[:1000000]
-    train_set = load("sutter_encounters_4.pkl")[1000000:]
+    output_vocab = load("sutter_drug_vocab_3.pkl")
+    test_set = load("sutter_encounters_3.pkl")[:1000000]
+    train_set = load("sutter_encounters_3.pkl")[1000000:]
     mfm = MostFreqMatch(1)
     mfm.fit(train_set)
 

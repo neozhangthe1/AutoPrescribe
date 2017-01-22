@@ -192,8 +192,8 @@ def gen_vocab(encounters):
                 diag_vocab[diag] = cnt1
                 cnt1 += 1
         for drug in p[1]:
-            if not drug[:8] in drug_vocab:
-                drug_vocab[drug[:8]] = cnt2
+            if not drug[:6] in drug_vocab:
+                drug_vocab[drug[:6]] = cnt2
                 cnt2 += 1
     dump(diag_vocab, "sutter_diag_vocab.pkl")
-    dump(drug_vocab, "sutter_drug_vocab_4.pkl")
+    dump(drug_vocab, "sutter_drug_vocab_3.pkl")

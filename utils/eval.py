@@ -14,10 +14,10 @@ class Evaluator(object):
             diag_vocab = load("diag_vocab.pkl")
             drug_vocab = load("drug_vocab.pkl")
         elif ds == "sutter":
-            self.test_set = load("sutter_encounters_4.pkl")
+            self.test_set = load("sutter_encounters_3.pkl")
             self.golden_rule = load("icd_to_ndc_index.pkl")
             diag_vocab = load("sutter_diag_vocab.pkl")
-            drug_vocab = load("sutter_drug_vocab_4.pkl")
+            drug_vocab = load("sutter_drug_vocab_3.pkl")
         self.index_to_diag = {}
         self.index_to_drug = {}
         for diag in diag_vocab:

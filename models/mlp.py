@@ -19,12 +19,12 @@ class MLP(object):
         self.model.add(Activation("relu"))
         self.model.add(Dense(output_dim=1000, input_dim=self.input_dim))
         self.model.add(Activation("relu"))
-        self.model.add(Dense(output_dim=2000, input_dim=self.input_dim))
-        self.model.add(Activation("relu"))
+        # self.model.add(Dense(output_dim=2000, input_dim=self.input_dim))
+        # self.model.add(Activation("relu"))
         self.model.add(Dense(output_dim=self.output_dim))
         self.model.add(Activation("softmax"))
 
-        self.model.compile(loss='categorical_crossentropy', optimizer=SGD(lr=0.01, momentum=0.9, nesterov=True), metrics=['accuracy'])
+        self.model.compile(loss='categorical_crossentropy', optimizer=SGD(lr=0.01, momentum=0.9, nesterov=True), metrics=['accuracy', 'precision', 'recall'])
 
     def load_data(self, train_set, test_set, source_size, target_size):
         self.train_x = np.zeros((len(train_set), source_size))
@@ -45,7 +45,7 @@ class MLP(object):
                 self.test_y[i, j] = 1
 
     def fit(self, epoch):
-        self.model.fit(self.train_x, self.train_y, nb_epoch=50, batch_size=32, verbose=True)
+        self.model.fit(self.train_x, self.train_y, validation_data=(self.test_x, self.test_y), nb_epoch=50, batch_size=32, verbose=True)
 
     def eval(self):
         loss_and_metrics = self.model.evaluate(self.test_x, self.test_y, batch_size=32)
@@ -59,8 +59,8 @@ class MLP(object):
 
 def train():
     input_vocab = load("sutter_diag_vocab.pkl")
-    output_vocab = load("sutter_drug_vocab_4.pkl")
-    encounters = load("sutter_encounters_4.pkl")
+    output_vocab = load("sutter_drug_vocab_3.pkl")
+    encounters = load("sutter_encounters_3.pkl")
     test_set = []
     train_set = []
     for enc in encounters[:1000000]:
