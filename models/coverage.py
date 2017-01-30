@@ -63,7 +63,7 @@ class CoverageModel:
         l_t = l_target_outputs
         l_target_outputs = lasagne.layers.ReshapeLayer(l_target_outputs, (-1, [2]))  # (batch * dec_len, vocab + extra)
 
-        l_gen = layers.GRUCoverageTestLayer(config.dec_units, grad_clipping=config.grad_clipping,
+        l_gen = layers.GRUCoverageTrainLayer(config.dec_units, grad_clipping=config.grad_clipping,
                                         source_token_cnt=processor.source_vocab_size, target_token_cnt=processor.target_vocab_size,
                                         l_enc_feat=l_source, l_enc_mask=l_source_mask_inputs,
                                         W_emb=self.W2, resetgate=l_t.resetgate, updategate=l_t.updategate,
