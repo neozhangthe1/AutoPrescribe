@@ -21,7 +21,7 @@ class config:
     print_reinforce_per = 10
     max_epoch = 1000000
 
-    dir = '../models/'
+    dir = 'build/'
     saved_model_file = dir + 'rf_seed{}_{}d_lr{}_h{}.model'.format(model_seed, embedding_size, learning_rate, enc_units)
 
 def get_config():
