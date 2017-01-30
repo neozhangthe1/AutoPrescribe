@@ -199,7 +199,7 @@ class GRUCoverageTrainLayer(lasagne.layers.MergeLayer):
 
         # Create single recurrent computation step function
         # input__n is the n'th vector of the input
-        def step(input_n, output_n, hid_previous, copy_hid_previous, prob_previous, *args):
+        def step(input_n, output_n, hid_previous, *args):
             """
             input_n: (batch, ); each entry is the index; no extra vocabulary.
             output_n: (batch, ); each entry is the index; with extra vocabulary.
@@ -286,7 +286,7 @@ class GRUCoverageTrainLayer(lasagne.layers.MergeLayer):
 
             return hid #[hid, copy_hid, prob]
 
-        def step_masked(input_n, output_n, mask_n, hid_previous, copy_hid_previous, prob_previous, *args):
+        def step_masked(input_n, output_n, mask_n, hid_previous, *args):
             # [hid, copy_hid, prob] = step(input_n, output_n, hid_previous, copy_hid_previous, prob_previous, *args)
             #
             # # Skip over any input with mask 0 by copying the previous
@@ -294,7 +294,7 @@ class GRUCoverageTrainLayer(lasagne.layers.MergeLayer):
             # hid = T.switch(mask_n, hid, hid_previous)
             #
             # return [hid, copy_hid, prob]
-            hid = step(input_n, output_n, hid_previous, copy_hid_previous, prob_previous, *args) #step(input_n, hid_previous, *args)
+            hid = step(input_n, output_n, hid_previous, *args) #step(input_n, hid_previous, *args)
 
             # Skip over any input with mask 0 by copying the previous
             # hidden state; proceed normally for any input with mask 1.
@@ -316,7 +316,7 @@ class GRUCoverageTrainLayer(lasagne.layers.MergeLayer):
             # Dot against a 1s vector to repeat to shape (num_batch, num_units)
             hid_init = T.dot(T.ones((num_batch, 1)), self.hid_init)
 
-        copy_hid_init = T.zeros((num_batch, self.num_units))
+        # copy_hid_init = T.zeros((num_batch, self.num_units))
 
         # The hidden-to-hidden weight matrix is always used in step
         non_seqs = [W_hid_stacked]
@@ -327,43 +327,6 @@ class GRUCoverageTrainLayer(lasagne.layers.MergeLayer):
 
         non_seqs += [enc_feat, enc_mask, self.W_emb]
 
-        # if self.unroll_scan:
-        #     # Retrieve the dimensionality of the incoming layer
-        #     input_shape = self.input_shapes[0]
-        #     # Explicitly unroll the recurrence instead of using scan
-        #     hid_out = unroll_scan(
-        #         fn=step_fun,
-        #         sequences=sequences,
-        #         outputs_info=[hid_init],
-        #         go_backwards=self.backwards,
-        #         non_sequences=non_seqs,
-        #         n_steps=input_shape[1])[0]
-        # else:
-        #     # Scan op iterates over first dimension of input and repeatedly
-        #     # applies the step function
-        #     hid_out = theano.scan(
-        #         fn=step_fun,
-        #         sequences=sequences,
-        #         go_backwards=self.backwards,
-        #         outputs_info=[hid_init],
-        #         non_sequences=non_seqs,
-        #         truncate_gradient=self.gradient_steps,
-        #         strict=True)[0]
-        #
-        # # When it is requested that we only return the final sequence step,
-        # # we need to slice it out immediately after scan is applied
-        # if self.only_return_final:
-        #     hid_out = hid_out[-1]
-        # else:
-        #     # dimshuffle back to (n_batch, n_time_steps, n_features))
-        #     hid_out = hid_out.dimshuffle(1, 0, 2)
-        #
-        #     # if scan is backward reverse the output
-        #     if self.backwards:
-        #         hid_out = hid_out[:, ::-1]
-        #
-        # return hid_out
-
         if self.unroll_scan:
             # Retrieve the dimensionality of the incoming layer
             input_shape = self.input_shapes[0]
@@ -371,7 +334,7 @@ class GRUCoverageTrainLayer(lasagne.layers.MergeLayer):
             hid_out = unroll_scan(
                 fn=step_fun,
                 sequences=sequences,
-                outputs_info=[hid_init, copy_hid_init, None],
+                outputs_info=[hid_init],
                 go_backwards=self.backwards,
                 non_sequences=non_seqs,
                 n_steps=input_shape[1])[0]
@@ -382,24 +345,13 @@ class GRUCoverageTrainLayer(lasagne.layers.MergeLayer):
                 fn=step_fun,
                 sequences=sequences,
                 go_backwards=self.backwards,
-                outputs_info=[hid_init, copy_hid_init, None],
+                outputs_info=[hid_init],
                 non_sequences=non_seqs,
                 truncate_gradient=self.gradient_steps,
                 strict=True)[0]
 
         # When it is requested that we only return the final sequence step,
         # we need to slice it out immediately after scan is applied
-        # if self.only_return_final:
-        #     prob_out = prob_out[-1]
-        # else:
-        #     # dimshuffle back to (n_batch, n_time_steps, n_features))
-        #     prob_out = prob_out.dimshuffle(1, 0, 2)
-        #
-        #     # if scan is backward reverse the output
-        #     if self.backwards:
-        #         prob_out = prob_out[:, ::-1]
-        #
-        # return prob_out
         if self.only_return_final:
             hid_out = hid_out[-1]
         else:
@@ -411,6 +363,43 @@ class GRUCoverageTrainLayer(lasagne.layers.MergeLayer):
                 hid_out = hid_out[:, ::-1]
 
         return hid_out
+
+        # if self.unroll_scan:
+        #     # Retrieve the dimensionality of the incoming layer
+        #     input_shape = self.input_shapes[0]
+        #     # Explicitly unroll the recurrence instead of using scan
+        #     [hid_out, _, prob_out] = unroll_scan(
+        #         fn=step_fun,
+        #         sequences=sequences,
+        #         outputs_info=[hid_init, copy_hid_init, None],
+        #         go_backwards=self.backwards,
+        #         non_sequences=non_seqs,
+        #         n_steps=input_shape[1])[0]
+        # else:
+        #     # Scan op iterates over first dimension of input and repeatedly
+        #     # applies the step function
+        #     [hid_out, _, prob_out] = theano.scan(
+        #         fn=step_fun,
+        #         sequences=sequences,
+        #         go_backwards=self.backwards,
+        #         outputs_info=[hid_init, copy_hid_init, None],
+        #         non_sequences=non_seqs,
+        #         truncate_gradient=self.gradient_steps,
+        #         strict=True)[0]
+        #
+        # # When it is requested that we only return the final sequence step,
+        # # we need to slice it out immediately after scan is applied
+        # if self.only_return_final:
+        #     prob_out = prob_out[-1]
+        # else:
+        #     # dimshuffle back to (n_batch, n_time_steps, n_features))
+        #     prob_out = prob_out.dimshuffle(1, 0, 2)
+        #
+        #     # if scan is backward reverse the output
+        #     if self.backwards:
+        #         prob_out = prob_out[:, ::-1]
+        #
+        # return prob_out
 
 class GRUCoverageTestLayer(lasagne.layers.MergeLayer):
     def __init__(self, num_units,
