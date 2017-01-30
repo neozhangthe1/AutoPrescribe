@@ -73,7 +73,7 @@ class Processor:
         i = 0
         # UNK_INDEX = self.get_char_index('UNK')
         for pair in data:
-            target_text, source_text = tuple(pair)
+            source_text, target_text = tuple(pair)
 
             max_target_len = min(len(target_text) + 1, config.target_len)
             target_inputs[i, 0] = self.get_char_index('START', False)
