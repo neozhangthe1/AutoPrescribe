@@ -158,7 +158,7 @@ class CoverageModel:
         fout.close()
 
     def load_params(self, filename):
-        fin = open(filename)
+        fin = open(filename, "rb")
         params = pickle.load(fin)
         lasagne.layers.set_all_param_values(self.l, params)
         fin.close()
