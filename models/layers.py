@@ -62,8 +62,8 @@ class GRUCoverageTrainLayer(lasagne.layers.MergeLayer):
         self.enc_feat_index = len(incomings) - 1
         incomings.append(l_enc_mask)
         self.enc_mask_index = len(incomings) - 1
-        incomings.append(l_map)
-        self.map_index = len(incomings) - 1
+        # incomings.append(l_map)
+        # self.map_index = len(incomings) - 1
         incomings.append(l_output)
         self.output_index = len(incomings) - 1
 
