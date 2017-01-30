@@ -22,7 +22,7 @@ class config:
     max_epoch = 1000000
 
     dir = '../models/'
-    saved_model_file = dir + 'rf_seed{}_{}d_lr{}_h{}.model'.format(model_seed, char_embedding_size, learning_rate, enc_units)
+    saved_model_file = dir + 'rf_seed{}_{}d_lr{}_h{}.model'.format(model_seed, embedding_size, learning_rate, enc_units)
 
 def get_config():
     return config()
