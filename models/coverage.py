@@ -59,7 +59,7 @@ class CoverageModel:
                                                     target_token_cnt=processor.target_vocab_size, l_enc_feat=l_source,
                                                     l_enc_mask=l_source_mask_inputs,
                                                     l_output=l_output, W_emb=self.W2,
-                                                    unk_index=processor.get_char_index('UNK'), hid_init=l_source_last)
+                                                    unk_index=processor.get_char_index('UNK', False), hid_init=l_source_last)
         l_t = l_target_outputs
         l_target_outputs = lasagne.layers.ReshapeLayer(l_target_outputs, (-1, [2]))  # (batch * dec_len, vocab + extra)
 
