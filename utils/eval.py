@@ -91,6 +91,39 @@ class Evaluator(object):
 
         return precision, recall
 
+    def get_jaccard_k(self, truth, prediction, k=1):
+        import itertools
+
+        def get_set_product(set1, kk):
+            results = set()
+            if kk == 2:
+                for item in itertools.product(set1, set1):
+                    if len(set(item)) == len(item):
+                        results.add(tuple(sorted(item)))
+            elif kk == 3:
+                for item in itertools.product(set1, set1, set1):
+                    if len(set(item)) == len(item):
+                        results.add(tuple(sorted(item)))
+            return results
+
+        s1 = set(truth)
+        s2 = set(prediction)
+        if k > 1:
+            for item in get_set_product(truth, 2):
+                s1.add(item)
+            for item in get_set_product(prediction, 2):
+                s2.add(item)
+        if k > 2:
+            for item in get_set_product(truth, 3):
+                s1.add(item)
+            for item in get_set_product(prediction, 3):
+                s2.add(item)
+        interaction = len(s1.intersection(s2))
+        union = len(s1.union(s2))
+        if union == 0:
+            return 0
+        return float(interaction) / union
+
 
 def eval_freq():
     mfm = MostFreqMatch()
