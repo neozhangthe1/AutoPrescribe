@@ -97,7 +97,7 @@ class CoverageModel:
                 [source_inputs, target_inputs, target_outputs, source_mask_inputs, target_mask_inputs],
                 loss, on_unused_input='ignore',
                 mode=NanGuardMode(nan_is_error=True, inf_is_error=True, big_is_error=True))
-        self.test_fn = theano.function([source_inputs, source_mask_inputs], gen_y, on_unused_input='ignore')
+        # self.test_fn = theano.function([source_inputs, source_mask_inputs], gen_y, on_unused_input='ignore')
 
         # l_samp = layers.GRUCopyPureSampleLayer(config.dec_units, grad_clipping=config.grad_clipping,
         #                                        word_cnt=processor.char_cnt, extra_word_cnt=processor.extra_char_cnt,
