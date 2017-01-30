@@ -287,13 +287,19 @@ class GRUCoverageTrainLayer(lasagne.layers.MergeLayer):
             return hid #[hid, copy_hid, prob]
 
         def step_masked(input_n, output_n, mask_n, hid_previous, copy_hid_previous, prob_previous, *args):
-            [hid, copy_hid, prob] = step(input_n, output_n, hid_previous, copy_hid_previous, prob_previous, *args)
+            # [hid, copy_hid, prob] = step(input_n, output_n, hid_previous, copy_hid_previous, prob_previous, *args)
+            #
+            # # Skip over any input with mask 0 by copying the previous
+            # # hidden state; proceed normally for any input with mask 1.
+            # hid = T.switch(mask_n, hid, hid_previous)
+            #
+            # return [hid, copy_hid, prob]
+            hid = step(input_n, hid_previous, *args)
 
             # Skip over any input with mask 0 by copying the previous
             # hidden state; proceed normally for any input with mask 1.
             hid = T.switch(mask_n, hid, hid_previous)
-
-            return [hid, copy_hid, prob]
+            return hid
 
         if mask is not None:
             # mask is given as (batch_size, seq_len). Because scan iterates
