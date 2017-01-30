@@ -10,7 +10,7 @@ class config:
     batch_size = 512
     source_len = 20
     target_len = 20
-    char_embedding_size = 100
+    embedding_size = 100
     enc_units = 256
     dec_units = 256
     grad_clipping = 10
