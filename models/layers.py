@@ -214,7 +214,7 @@ class GRUCoverageTrainLayer(lasagne.layers.MergeLayer):
             att = T.nnet.softmax(att) * enc_mask # (batch, enc_len)
             att = att / (T.sum(att, axis = 1, keepdims = True) + 1e-8) # (batch, enc_len)
             att = T.batched_dot(att, enc_feat) # (batch, units)
-            input_n = T.concatenate([input_emb, copy_hid_previous, att], axis = 1)
+            input_n = T.concatenate([input_emb, att], axis = 1)
 
             # Compute W_{hr} h_{t - 1}, W_{hu} h_{t - 1}, and W_{hc} h_{t - 1}
             hid_input = T.dot(hid_previous, W_hid_stacked)
