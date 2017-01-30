@@ -348,17 +348,17 @@ class GRUCoverageTrainLayer(lasagne.layers.MergeLayer):
 
         # When it is requested that we only return the final sequence step,
         # we need to slice it out immediately after scan is applied
-        if self.only_return_final:
-            hid_out = hid_out[-1]
-        else:
-            # dimshuffle back to (n_batch, n_time_steps, n_features))
-            hid_out = hid_out.dimshuffle(1, 0, 2)
-
-            # if scan is backward reverse the output
-            if self.backwards:
-                hid_out = hid_out[:, ::-1]
-        print(hid_out.shape)
-        return [hid_out, prob_out]
+        # if self.only_return_final:
+        #     hid_out = hid_out[-1]
+        # else:
+        #     # dimshuffle back to (n_batch, n_time_steps, n_features))
+        #     hid_out = hid_out.dimshuffle(1, 0, 2)
+        #
+        #     # if scan is backward reverse the output
+        #     if self.backwards:
+        #         hid_out = hid_out[:, ::-1]
+        # print(hid_out.shape)
+        # return [hid_out, prob_out]
 
         # if self.unroll_scan:
         #     # Retrieve the dimensionality of the incoming layer
@@ -383,19 +383,19 @@ class GRUCoverageTrainLayer(lasagne.layers.MergeLayer):
         #         truncate_gradient=self.gradient_steps,
         #         strict=True)[0]
         #
-        # # When it is requested that we only return the final sequence step,
-        # # we need to slice it out immediately after scan is applied
-        # if self.only_return_final:
-        #     prob_out = prob_out[-1]
-        # else:
-        #     # dimshuffle back to (n_batch, n_time_steps, n_features))
-        #     prob_out = prob_out.dimshuffle(1, 0, 2)
-        #
-        #     # if scan is backward reverse the output
-        #     if self.backwards:
-        #         prob_out = prob_out[:, ::-1]
-        #
-        # return prob_out
+        # When it is requested that we only return the final sequence step,
+        # we need to slice it out immediately after scan is applied
+        if self.only_return_final:
+            prob_out = prob_out[-1]
+        else:
+            # dimshuffle back to (n_batch, n_time_steps, n_features))
+            prob_out = prob_out.dimshuffle(1, 0, 2)
+
+            # if scan is backward reverse the output
+            if self.backwards:
+                prob_out = prob_out[:, ::-1]
+
+        return prob_out
 
 class GRUCoverageTestLayer(lasagne.layers.MergeLayer):
     def __init__(self, num_units,
