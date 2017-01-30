@@ -421,7 +421,7 @@ class GRUCoverageTestLayer(lasagne.layers.MergeLayer):
                  source_token_cnt=None,
                  target_token_cnt=None,
                  W_emb=None,
-                 # W_gen=lasagne.init.GlorotUniform(),
+                 W_gen=lasagne.init.GlorotUniform(),
                  # W_copy=lasagne.init.GlorotUniform(),
                  # W_mode=lasagne.init.Normal(),
                  unk_index=None,
@@ -507,7 +507,7 @@ class GRUCoverageTestLayer(lasagne.layers.MergeLayer):
                 hid_init, (1, self.num_units), name="hid_init",
                 trainable=learn_init, regularizable=False)
 
-        # self.W_gen = self.add_param(W_gen, (self.num_units, self.target_token_cnt), name = "W_gen")
+        self.W_gen = self.add_param(W_gen, (self.num_units, self.target_token_cnt), name = "W_gen")
         # self.W_copy = self.add_param(W_copy, (self.num_units, self.num_units), name = "W_copy")
         # self.W_mode = self.add_param(W_mode, (self.num_units, ), name = "W_mode")
 
@@ -555,7 +555,7 @@ class GRUCoverageTestLayer(lasagne.layers.MergeLayer):
 
         # Create single recurrent computation step function
         # input__n is the n'th vector of the input
-        def step(input_n, hid_previous, copy_hid_previous, *args):
+        def step(input_n, hid_previous, *args):
             """
             input_n: (batch, ); each entry is the index; with extra vocabulary.
             hid_previous: (batch, units).
@@ -569,7 +569,7 @@ class GRUCoverageTestLayer(lasagne.layers.MergeLayer):
             att = T.nnet.softmax(att) * enc_mask # (batch, enc_len)
             att = att / (T.sum(att, axis = 1, keepdims = True) + 1e-8) # (batch, enc_len)
             att = T.batched_dot(att, enc_feat) # (batch, units)
-            input_n = T.concatenate([input_emb, copy_hid_previous, att], axis = 1)
+            input_n = T.concatenate([input_emb, att, att], axis = 1)
 
             # Compute W_{hr} h_{t - 1}, W_{hu} h_{t - 1}, and W_{hc} h_{t - 1}
             hid_input = T.dot(hid_previous, W_hid_stacked)
@@ -602,8 +602,8 @@ class GRUCoverageTestLayer(lasagne.layers.MergeLayer):
             # Compute (1 - u_t)h_{t - 1} + u_t c_t
             hid = (1 - updategate)*hid_previous + updategate*hidden_update # (batch, units)
 
-            # gen_score = T.dot(hid, self.W_gen)
-            # gen_log_probs = log_softmax(gen_score)
+            gen_score = T.dot(hid, self.W_gen)
+            gen_log_probs = log_softmax(gen_score)
             # copy_score = T.batched_dot(T.tanh(T.dot(enc_feat, self.W_copy)), hid)
             # copy_score -= copy_score.max(axis = 1, keepdims = True)
             # copy_score_no_map = T.exp(copy_score)
@@ -632,8 +632,9 @@ class GRUCoverageTestLayer(lasagne.layers.MergeLayer):
             # combined_probs = T.set_subtensor(combined_probs[:, : self.word_cnt], vocab_log_probs)
             # combined_probs = T.set_subtensor(combined_probs[:, self.word_cnt :], extra_log_probs)
             # prob = combined_probs
+            prob = gen_log_probs
             #
-            # next_input = T.cast(T.argmax(prob, axis = 1), 'int32')
+            next_input = T.cast(T.argmax(prob, axis = 1), 'int32')
             #
             # output_n = T.extra_ops.to_one_hot(next_input, self.word_cnt + self.extra_word_cnt) # (batch, vocab + extra)
             # output_n = T.batched_dot(output_n, map.dimshuffle(0, 2, 1)) # (batch, enc_len)
@@ -641,7 +642,7 @@ class GRUCoverageTestLayer(lasagne.layers.MergeLayer):
             # copy_probs = copy_probs / (T.sum(copy_probs, axis = 1, keepdims = True) + 1e-8) # (batch, enc_len)
             # copy_hid = T.batched_dot(copy_probs, enc_feat) # (batch, units)
 
-            return hid #[next_input, hid, copy_hid]
+            return [next_input, hid]
 
         step_fun = step
 
@@ -665,19 +666,19 @@ class GRUCoverageTestLayer(lasagne.layers.MergeLayer):
             # Retrieve the dimensionality of the incoming layer
             input_shape = self.input_shapes[0]
             # Explicitly unroll the recurrence instead of using scan
-            [token_out, hid_out, _] = unroll_scan(
+            [token_out, hid_out] = unroll_scan(
                 fn=step_fun,
-                outputs_info=[input_init, hid_init, copy_hid_init],
+                outputs_info=[input_init, hid_init],
                 go_backwards=self.backwards,
                 non_sequences=non_seqs,
                 n_steps=self.gen_len)[0]
         else:
             # Scan op iterates over first dimension of input and repeatedly
             # applies the step function
-            [token_out, hid_out, _] = theano.scan(
+            [token_out, hid_out] = theano.scan(
                 fn=step_fun,
                 go_backwards=self.backwards,
-                outputs_info=[input_init, hid_init, copy_hid_init],
+                outputs_info=[input_init, hid_init],
                 non_sequences=non_seqs,
                 truncate_gradient=self.gradient_steps,
                 strict=True,
@@ -709,27 +710,27 @@ class GRUCoverageTestLayer(lasagne.layers.MergeLayer):
         if not self.precompute_input:
             non_seqs += [W_in_stacked, b_stacked]
 
-        non_seqs += [enc_feat, enc_mask, self.W_emb]
+        non_seqs += [enc_feat, enc_mask, self.W_gen, self.W_emb]
 
         if self.unroll_scan:
             # Retrieve the dimensionality of the incoming layer
             input_shape = self.input_shapes[0]
             # Explicitly unroll the recurrence instead of using scan
-            [hid_out, _, prob_out] = unroll_scan(
+            [hid_out, prob_out] = unroll_scan(
                 fn=step_fun,
                 sequences=sequences,
-                outputs_info=[hid_init, copy_hid_init, None],
+                outputs_info=[hid_init, None],
                 go_backwards=self.backwards,
                 non_sequences=non_seqs,
                 n_steps=input_shape[1])[0]
         else:
             # Scan op iterates over first dimension of input and repeatedly
             # applies the step function
-            [hid_out, _, prob_out] = theano.scan(
+            [hid_out, prob_out] = theano.scan(
                 fn=step_fun,
                 sequences=sequences,
                 go_backwards=self.backwards,
-                outputs_info=[hid_init, copy_hid_init, None],
+                outputs_info=[hid_init, None],
                 non_sequences=non_seqs,
                 truncate_gradient=self.gradient_steps,
                 strict=True)[0]
