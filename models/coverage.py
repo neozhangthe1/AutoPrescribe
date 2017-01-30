@@ -55,8 +55,8 @@ class CoverageModel:
         l_source_last = lasagne.layers.SliceLayer(l_source, -1, axis=1)
 
         l_target_outputs = layers.GRUCoverageTrainLayer(l_target_inputs, config.dec_units, mask_input=l_target_mask_inputs,
-                                                    grad_clipping=config.grad_clipping, word_cnt=processor.char_cnt,
-                                                    extra_word_cnt=processor.extra_char_cnt, l_enc_feat=l_source,
+                                                    grad_clipping=config.grad_clipping, source_token_cnt=processor.source_vocab_size,
+                                                    target_token_cnt=processor.target_vocab_size, l_enc_feat=l_source,
                                                     l_enc_mask=l_source_mask_inputs,
                                                     l_output=l_output, W_emb=self.W2,
                                                     unk_index=processor.get_char_index('UNK'), hid_init=l_source_last)
@@ -64,7 +64,7 @@ class CoverageModel:
         l_target_outputs = lasagne.layers.ReshapeLayer(l_target_outputs, (-1, [2]))  # (batch * dec_len, vocab + extra)
 
         l_gen = layers.GRUCopyTestLayer(config.dec_units, grad_clipping=config.grad_clipping,
-                                        word_cnt=processor.char_cnt, extra_word_cnt=processor.extra_char_cnt,
+                                        source_token_cnt=processor.source_vocab_size, target_token_cnt=processor.target_vocab_size,
                                         l_enc_feat=l_source, l_enc_mask=l_source_mask_inputs,
                                         W_emb=self.W2, resetgate=l_t.resetgate, updategate=l_t.updategate,
                                         hidden_update=l_t.hidden_update, hid_init=l_source_last,
@@ -74,7 +74,7 @@ class CoverageModel:
 
         py = lasagne.layers.get_output(l_target_outputs)
         loss = (
-        py * T.extra_ops.to_one_hot(target_outputs.flatten(), processor.char_cnt + processor.extra_char_cnt)).sum(
+        py * T.extra_ops.to_one_hot(target_outputs.flatten(), processor.target_vocab_size)).sum(
             axis=1)  # (batch * dec_len)
         loss = - (loss * target_mask_inputs.flatten()).mean()
 
@@ -93,27 +93,27 @@ class CoverageModel:
                 mode=NanGuardMode(nan_is_error=True, inf_is_error=True, big_is_error=True))
         self.test_fn = theano.function([source_inputs, source_mask_inputs, map_inputs], gen_y, on_unused_input='ignore')
 
-        l_samp = layers.GRUCopyPureSampleLayer(config.dec_units, grad_clipping=config.grad_clipping,
-                                               word_cnt=processor.char_cnt, extra_word_cnt=processor.extra_char_cnt,
-                                               l_enc_feat=l_source, l_enc_mask=l_source_mask_inputs,
-                                               W_emb=self.W2, resetgate=l_t.resetgate, updategate=l_t.updategate,
-                                               hidden_update=l_t.hidden_update, hid_init=l_source_last,
-                                               unk_index=processor.get_char_index('UNK'),
-                                               start_index=processor.get_char_index('START'), gen_len=config.target_len,
-                                               MRG_stream=self.MRG_stream)  # (batch, dec_len)
-        samp_y = lasagne.layers.get_output(l_samp)
-        self.sample_fn = theano.function([source_inputs, source_mask_inputs, map_inputs], samp_y,
-                                         updates=l_samp.updates, on_unused_input='ignore')
+        # l_samp = layers.GRUCopyPureSampleLayer(config.dec_units, grad_clipping=config.grad_clipping,
+        #                                        word_cnt=processor.char_cnt, extra_word_cnt=processor.extra_char_cnt,
+        #                                        l_enc_feat=l_source, l_enc_mask=l_source_mask_inputs,
+        #                                        W_emb=self.W2, resetgate=l_t.resetgate, updategate=l_t.updategate,
+        #                                        hidden_update=l_t.hidden_update, hid_init=l_source_last,
+        #                                        unk_index=processor.get_char_index('UNK'),
+        #                                        start_index=processor.get_char_index('START'), gen_len=config.target_len,
+        #                                        MRG_stream=self.MRG_stream)  # (batch, dec_len)
+        # samp_y = lasagne.layers.get_output(l_samp)
+        # self.sample_fn = theano.function([source_inputs, source_mask_inputs, map_inputs], samp_y,
+        #                                  updates=l_samp.updates, on_unused_input='ignore')
 
-        reward_inputs = T.matrix()  # (batch, dec_len)
-        reinforce_loss = (
-        py * T.extra_ops.to_one_hot(target_outputs.flatten(), processor.char_cnt + processor.extra_char_cnt)).sum(
-            axis=1)  # (batch * dec_len)
-        reinforce_loss = - (reinforce_loss * target_mask_inputs.flatten() * reward_inputs.flatten()).mean()
-        reinforce_updates = lasagne.updates.adam(reinforce_loss, params, learning_rate=config.reinforce_learning_rate)
-        self.reinforce_fn = theano.function(
-                [source_inputs, target_inputs, target_outputs, source_mask_inputs, target_mask_inputs, map_inputs,
-                 reward_inputs], None, updates=reinforce_updates, on_unused_input='ignore')
+        # reward_inputs = T.matrix()  # (batch, dec_len)
+        # reinforce_loss = (
+        # py * T.extra_ops.to_one_hot(target_outputs.flatten(), processor.char_cnt + processor.extra_char_cnt)).sum(
+        #     axis=1)  # (batch * dec_len)
+        # reinforce_loss = - (reinforce_loss * target_mask_inputs.flatten() * reward_inputs.flatten()).mean()
+        # reinforce_updates = lasagne.updates.adam(reinforce_loss, params, learning_rate=config.reinforce_learning_rate)
+        # self.reinforce_fn = theano.function(
+        #         [source_inputs, target_inputs, target_outputs, source_mask_inputs, target_mask_inputs, map_inputs,
+        #          reward_inputs], None, updates=reinforce_updates, on_unused_input='ignore')
 
         print('params', lasagne.layers.count_params(self.l, trainable=True))
 

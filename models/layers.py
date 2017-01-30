@@ -38,8 +38,9 @@ class GRUCoverageTrainLayer(lasagne.layers.MergeLayer):
                  l_enc_mask=None,
                  l_map=None,
                  l_output=None,
-                 word_cnt=None,
-                 extra_word_cnt=None,
+                 source_token_cnt=None,
+                 target_token_cnt=None,
+                 # extra_word_cnt=None,
                  W_emb=None,
                  W_gen=lasagne.init.GlorotUniform(),
                  # W_copy=lasagne.init.GlorotUniform(),
@@ -78,7 +79,7 @@ class GRUCoverageTrainLayer(lasagne.layers.MergeLayer):
         self.precompute_input = precompute_input
         self.only_return_final = only_return_final
         self.word_cnt = word_cnt
-        self.extra_word_cnt = extra_word_cnt
+        # self.extra_word_cnt = extra_word_cnt
         self.W_emb = W_emb
         self.unk_index = unk_index
 
