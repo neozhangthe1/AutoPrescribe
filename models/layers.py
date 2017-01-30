@@ -48,6 +48,8 @@ class GRUCoverageTrainLayer(lasagne.layers.MergeLayer):
                  unk_index=None,
                  **kwargs):
 
+        print("incoming", incoming)
+
         incomings = [incoming]
         self.mask_incoming_index = -1
         self.hid_init_incoming_index = -1
@@ -78,7 +80,8 @@ class GRUCoverageTrainLayer(lasagne.layers.MergeLayer):
         self.unroll_scan = unroll_scan
         self.precompute_input = precompute_input
         self.only_return_final = only_return_final
-        self.word_cnt = word_cnt
+        self.source_token_cnt = source_token_cnt
+        self.target_token_cnt = target_token_cnt
         # self.extra_word_cnt = extra_word_cnt
         self.W_emb = W_emb
         self.unk_index = unk_index
@@ -133,7 +136,7 @@ class GRUCoverageTrainLayer(lasagne.layers.MergeLayer):
                 hid_init, (1, self.num_units), name="hid_init",
                 trainable=learn_init, regularizable=False)
 
-        self.W_gen = self.add_param(W_gen, (self.num_units, self.word_cnt), name = "W_gen")
+        self.W_gen = self.add_param(W_gen, (self.num_units, self.target_token_cnt), name = "W_gen")
         # self.W_copy = self.add_param(W_copy, (self.num_units, self.num_units), name = "W_copy")
         # self.W_mode = self.add_param(W_mode, (self.num_units, ), name = "W_mode")
 
