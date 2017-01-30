@@ -42,7 +42,7 @@ class GRUCoverageTrainLayer(lasagne.layers.MergeLayer):
                  target_token_cnt=None,
                  # extra_word_cnt=None,
                  W_emb=None,
-                 W_gen=lasagne.init.GlorotUniform(),
+                 # W_gen=lasagne.init.GlorotUniform(),
                  # W_copy=lasagne.init.GlorotUniform(),
                  # W_mode=lasagne.init.Normal(),
                  unk_index=None,
@@ -137,7 +137,7 @@ class GRUCoverageTrainLayer(lasagne.layers.MergeLayer):
                 hid_init, (1, self.num_units), name="hid_init",
                 trainable=learn_init, regularizable=False)
 
-        self.W_gen = self.add_param(W_gen, (self.num_units, self.target_token_cnt), name = "W_gen")
+        # self.W_gen = self.add_param(W_gen, (self.num_units, self.target_token_cnt), name = "W_gen")
         # self.W_copy = self.add_param(W_copy, (self.num_units, self.num_units), name = "W_copy")
         # self.W_mode = self.add_param(W_mode, (self.num_units, ), name = "W_mode")
 
@@ -166,7 +166,7 @@ class GRUCoverageTrainLayer(lasagne.layers.MergeLayer):
 
         enc_feat = inputs[self.enc_feat_index]
         enc_mask = inputs[self.enc_mask_index]
-        map = inputs[self.map_index] # (batch, enc_len, vocab + extra)
+        # map = inputs[self.map_index] # (batch, enc_len, vocab + extra)
         output = inputs[self.output_index] # (batch, dec_len)
 
         # Because scan iterates over the first dimension we dimshuffle to
@@ -319,7 +319,7 @@ class GRUCoverageTrainLayer(lasagne.layers.MergeLayer):
         if not self.precompute_input:
             non_seqs += [W_in_stacked, b_stacked]
 
-        non_seqs += [enc_feat, enc_mask, self.W_gen, self.W_copy, self.W_mode, self.W_emb, map]
+        non_seqs += [enc_feat, enc_mask, self.W_emb]
 
         if self.unroll_scan:
             # Retrieve the dimensionality of the incoming layer
@@ -379,7 +379,7 @@ class GRUCoverageTestLayer(lasagne.layers.MergeLayer):
                  source_token_cnt=None,
                  target_token_cnt=None,
                  W_emb=None,
-                 W_gen=lasagne.init.GlorotUniform(),
+                 # W_gen=lasagne.init.GlorotUniform(),
                  # W_copy=lasagne.init.GlorotUniform(),
                  # W_mode=lasagne.init.Normal(),
                  unk_index=None,
@@ -465,7 +465,7 @@ class GRUCoverageTestLayer(lasagne.layers.MergeLayer):
                 hid_init, (1, self.num_units), name="hid_init",
                 trainable=learn_init, regularizable=False)
 
-        self.W_gen = self.add_param(W_gen, (self.num_units, self.target_token_cnt), name = "W_gen")
+        # self.W_gen = self.add_param(W_gen, (self.num_units, self.target_token_cnt), name = "W_gen")
         # self.W_copy = self.add_param(W_copy, (self.num_units, self.num_units), name = "W_copy")
         # self.W_mode = self.add_param(W_mode, (self.num_units, ), name = "W_mode")
 
@@ -617,7 +617,7 @@ class GRUCoverageTestLayer(lasagne.layers.MergeLayer):
         if not self.precompute_input:
             non_seqs += [W_in_stacked, b_stacked]
 
-        non_seqs += [enc_feat, enc_mask, self.W_gen, self.W_copy, self.W_mode, self.W_emb, map]
+        non_seqs += [enc_feat, enc_mask, self.W_emb]
 
         if self.unroll_scan:
             # Retrieve the dimensionality of the incoming layer
@@ -667,7 +667,7 @@ class GRUCoverageTestLayer(lasagne.layers.MergeLayer):
         if not self.precompute_input:
             non_seqs += [W_in_stacked, b_stacked]
 
-        non_seqs += [enc_feat, enc_mask, self.W_gen, self.W_copy, self.W_emb, map]
+        non_seqs += [enc_feat, enc_mask, self.W_emb]
 
         if self.unroll_scan:
             # Retrieve the dimensionality of the incoming layer
