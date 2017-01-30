@@ -295,6 +295,6 @@ def run():
     train_y = np.zeros((len(train_set), len(output_vocab)))
     test_x = np.zeros((len(test_set), len(input_vocab)))
     test_y = np.zeros((len(test_set), len(output_vocab)))
-    model = AttentionSeq2Seq(input_dim=5, input_length=7, hidden_dim=10, output_length=8, output_dim=20, depth=4)
+    model = AttentionSeq2Seq(input_dim=len(input_vocab), input_length=10, hidden_dim=100, output_length=10, output_dim=len(output_vocab), depth=4)
     model.compile(loss='mse', optimizer='rmsprop', metrics=['accuracy', 'precision', 'recall'])
     model.fit(train_x, train_y, validation_data=(test_x[:1000], test_y[:1000]))

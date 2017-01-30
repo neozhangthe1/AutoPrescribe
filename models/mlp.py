@@ -1,6 +1,7 @@
 from keras.models import Sequential
 from keras.layers import Dense, Activation
 from keras.optimizers import SGD
+from keras.models import load_model
 import numpy as np
 from utils.data import get_model_path, load
 
@@ -68,6 +69,33 @@ def train():
     for enc in encounters[1000000:]:
         test_set.append(([input_vocab[code] for code in enc[0]], [output_vocab[code] for code in enc[1]]))
     mlp = MLP()
+    mlp.load_data(train_set, test_set, len(input_vocab), len(output_vocab))
+    mlp.build_model()
+    mlp.fit(1)
+
+def test():
+    input_vocab = load("sutter_diag_vocab.pkl")
+    output_vocab = load("sutter_drug_vocab_3.pkl")
+    encounters = load("sutter_encounters_3.pkl")
+    test_set = []
+    train_set = []
+    for enc in encounters[:1000000]:
+        train_set.append(([input_vocab[code] for code in enc[0]], [output_vocab[code] for code in enc[1]]))
+    for enc in encounters[1000000:]:
+        test_set.append(([input_vocab[code] for code in enc[0]], [output_vocab[code] for code in enc[1]]))
+    mlp = load_model("mlp_sutter.model")
+
+    input_dim = len(input_vocab)
+    output_dim = len(output_vocab)
+    test_x = np.zeros((len(test_set), input_dim))
+    test_y = np.zeros((len(test_set), output_dim))
+
+    for i, pair in enumerate(test_set):
+        for j in pair[0]:
+            test_x[i, j] = 1
+        for j in pair[1]:
+            test_y[i, j] = 1
+    for item in test_set:
     mlp.load_data(train_set, test_set, len(input_vocab), len(output_vocab))
     mlp.build_model()
     mlp.fit(1)

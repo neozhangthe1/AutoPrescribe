@@ -3,6 +3,24 @@ from collections import defaultdict as dd
 import codecs
 import pickle
 from utils.data import dump, load
+import random
+
+
+def split_data(encounters):
+    cleaned_encounters = []
+    for d in encounters:
+        if "" in d[1]:
+            d[1].remove("")
+        if len(d[1]) > 0:
+            cleaned_encounters.append(d)
+    random.shuffle(cleaned_encounters)
+    encounters_train = cleaned_encounters[:2300000]
+    encounters_dev = cleaned_encounters[2300000:]
+    with open("sutter_encounter.train.pkl", "wb") as f_out:
+        pickle.dump(encounters_train, f_out)
+    with open("sutter_encounter.dev.pkl", "wb") as f_out:
+        pickle.dump(encounters_dev, f_out)
+
 
 def load_sutter():
     cnt = 0
@@ -111,6 +129,7 @@ def join_prescription(meds, medications):
         prescriptions.append(pres)
     dump(prescriptions, "prescriptions.pkl")
 
+
 def search_precription_by_drug(prescriptions, code):
     results = []
     for p in prescriptions:
@@ -197,3 +216,27 @@ def gen_vocab(encounters):
                 cnt2 += 1
     dump(diag_vocab, "sutter_diag_vocab.pkl")
     dump(drug_vocab, "sutter_drug_vocab_3.pkl")
+
+
+def gen_parallel_text():
+    f_out1 = open("sutter_diag.txt", "w")
+    f_out2 = open("sutter_drug.txt", "w")
+    encounters = load("sutter_encounters_3.pkl")
+    for enc in encounters:
+        f_out1.write(" ".join(enc[0]) + "\n")
+        f_out2.write(" ".join(enc[1]) + "\n")
+    f_out1.close()
+    f_out2.close()
+
+
+def extract_mapping():
+    cnt = 0
+    records = dd(lambda: dd(lambda: dd(list)))
+    with codecs.open("SUTTER_ORDER_MED_DETAIL_V1.tab", "r", encoding='utf-8', errors='ignore') as f_in:
+        next(f_in)
+        for line in f_in:
+            if cnt % 100000 == 0:
+                print(cnt, len(records), line)
+            cnt += 1
+            x = line.strip().split("\t")
+            records[x[0]][x[9]][x[1]].append(x)

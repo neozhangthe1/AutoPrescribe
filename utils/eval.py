@@ -26,19 +26,20 @@ class Evaluator(object):
             self.index_to_drug[drug_vocab[drug]] = drug
 
     def eval(self, model):
-        precisions, recalls = [], []
+        precisions, recalls, jaccards = [], [], []
         cnt = 0
         for pair in self.test_set:
             outputs = set(pair[1])
             prediction = set(model.predict(pair[0]))
-            precision, recall = self.get_result(outputs, prediction)
+            precision, recall, jaccard = self.get_result(outputs, prediction)
             precisions.append(precision)
             recalls.append(recall)
+            jaccards.append(jaccard)
             if cnt % 1000 == 0:
-                print(cnt, precision, recall)
-                print(np.mean(precisions), np.mean(recalls))
+                print(cnt, precision, recall, jaccard)
+                print(np.mean(precisions), np.mean(recalls), np.mean(jaccards))
             cnt += 1
-        print(np.mean(precisions), np.mean(recalls))
+        print(np.mean(precisions), np.mean(recalls), np.mean(jaccards))
 
     def eval_golden(self, model):
         precisions, recalls = [], []
@@ -63,8 +64,9 @@ class Evaluator(object):
         fn = len(truth - prediction)
         precision = 0 if (tp + fp) == 0 else float(tp / (tp + fp))
         recall = 0 if (tp + fn) == 0 else float(tp / (tp + fn))
+        jaccard = 0 if len(truth.intersection(prediction)) == 0 else float(len(truth.intersection(prediction))) / len(truth.union(prediction))
 
-        return precision, recall
+        return precision, recall, jaccard
     
     def get_golden_eval(self, inputs, prediction):
         prediction = set(prediction)

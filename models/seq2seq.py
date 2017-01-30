@@ -32,7 +32,7 @@ class Seq2Seq(object):
                  num_samples=512,
                  steps_per_checkpoint=200,
                  use_fp16=False,
-                 train_dir="seq2seq/"):
+                 train_dir="sutter/"):
         self.train_set = []
         self.dev_set = []
         self.input_vocab = None
@@ -216,7 +216,7 @@ class Seq2Seq(object):
             loss += step_loss / self.steps_per_checkpoint
             current_step += 1
 
-            print(current_step, self.buckets[bucket_id], loss, step_loss)
+            print(current_step, self.buckets[bucket_id], loss/current_step, step_loss)
 
             # Once in a while, we save checkpoint, print statistics, and run evals.
             if current_step % self.steps_per_checkpoint == 0:
@@ -231,7 +231,7 @@ class Seq2Seq(object):
                 previous_losses.append(loss)
                 print(previous_losses[-10:])
                 # Save checkpoint and zero timer and loss.
-                checkpoint_path = os.path.join(self.train_dir, "mimic.ckpt")
+                checkpoint_path = os.path.join(self.train_dir, "sutter.ckpt")
                 model.saver.save(self.session, checkpoint_path, global_step=model.global_step)
                 step_time, loss = 0.0, 0.0
                 # Run evals on development set and print their perplexity.
@@ -337,6 +337,20 @@ def train():
     model = seq2seq.create_model(False)
     seq2seq.fit()
 
+def train_sutter():
+    input_vocab = load("sutter_diag_vocab.pkl")
+    output_vocab = load("sutter_drug_vocab_3.pkl")
+    encounters = load("sutter_encounters_3.pkl")
+    train_set = []
+    for enc in encounters[:1000000]:
+        train_set.append(([input_vocab[code] for code in enc[0]], [output_vocab[code] for code in enc[1]]))
+    test_set = []
+    for enc in encounters[1000000:]:
+        test_set.append(([input_vocab[code] for code in enc[0]], [output_vocab[code] for code in enc[1]]))
+    seq2seq = Seq2Seq()
+    seq2seq.load_data(input_vocab, output_vocab, train_set, test_set)
+    model = seq2seq.create_model(False)
+    seq2seq.fit()
 
 def test():
     input_vocab = load("diag_vocab.pkl")
