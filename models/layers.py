@@ -358,7 +358,7 @@ class GRUCoverageTrainLayer(lasagne.layers.MergeLayer):
 
         return prob_out
 
-class GRUCopyTestLayer(lasagne.layers.MergeLayer):
+class GRUCoverageTestLayer(lasagne.layers.MergeLayer):
     def __init__(self, num_units,
                  resetgate=lasagne.layers.Gate(W_cell=None),
                  updategate=lasagne.layers.Gate(W_cell=None),
@@ -375,13 +375,13 @@ class GRUCopyTestLayer(lasagne.layers.MergeLayer):
                  only_return_final=False,
                  l_enc_feat=None,
                  l_enc_mask=None,
-                 l_map=None,
-                 word_cnt=None,
-                 extra_word_cnt=None,
+                 # l_map=None,
+                 source_token_cnt=None,
+                 target_token_cnt=None,
                  W_emb=None,
                  W_gen=lasagne.init.GlorotUniform(),
-                 W_copy=lasagne.init.GlorotUniform(),
-                 W_mode=lasagne.init.Normal(),
+                 # W_copy=lasagne.init.GlorotUniform(),
+                 # W_mode=lasagne.init.Normal(),
                  unk_index=None,
                  start_index=None,
                  gen_len=None,
@@ -401,11 +401,11 @@ class GRUCopyTestLayer(lasagne.layers.MergeLayer):
         self.enc_feat_index = len(incomings) - 1
         incomings.append(l_enc_mask)
         self.enc_mask_index = len(incomings) - 1
-        incomings.append(l_map)
-        self.map_index = len(incomings) - 1
+        # incomings.append(l_map)
+        # self.map_index = len(incomings) - 1
 
         # Initialize parent layer
-        super(GRUCopyTestLayer, self).__init__(incomings, **kwargs)
+        super(GRUCoverageTestLayer, self).__init__(incomings, **kwargs)
 
         self.learn_init = learn_init
         self.num_units = num_units
@@ -415,8 +415,8 @@ class GRUCopyTestLayer(lasagne.layers.MergeLayer):
         self.unroll_scan = unroll_scan
         self.precompute_input = precompute_input
         self.only_return_final = only_return_final
-        self.word_cnt = word_cnt
-        self.extra_word_cnt = extra_word_cnt
+        self.source_token_cnt = source_token_cnt
+        self.target_token_cnt = target_token_cnt
         self.W_emb = W_emb
         self.unk_index = unk_index
         self.start_index = start_index
@@ -465,9 +465,9 @@ class GRUCopyTestLayer(lasagne.layers.MergeLayer):
                 hid_init, (1, self.num_units), name="hid_init",
                 trainable=learn_init, regularizable=False)
 
-        self.W_gen = self.add_param(W_gen, (self.num_units, self.word_cnt), name = "W_gen")
-        self.W_copy = self.add_param(W_copy, (self.num_units, self.num_units), name = "W_copy")
-        self.W_mode = self.add_param(W_mode, (self.num_units, ), name = "W_mode")
+        self.W_gen = self.add_param(W_gen, (self.num_units, self.target_token_cnt), name = "W_gen")
+        # self.W_copy = self.add_param(W_copy, (self.num_units, self.num_units), name = "W_copy")
+        # self.W_mode = self.add_param(W_mode, (self.num_units, ), name = "W_mode")
 
     def get_output_shape_for(self, input_shapes):
         return input_shapes[self.enc_feat_index][0], self.gen_len
@@ -483,7 +483,7 @@ class GRUCopyTestLayer(lasagne.layers.MergeLayer):
 
         enc_feat = inputs[self.enc_feat_index]
         enc_mask = inputs[self.enc_mask_index]
-        map = inputs[self.map_index] # (batch, enc_len, vocab + extra)
+        # map = inputs[self.map_index] # (batch, enc_len, vocab + extra)
 
         num_batch = enc_feat.shape[0]
 
@@ -560,46 +560,46 @@ class GRUCopyTestLayer(lasagne.layers.MergeLayer):
             # Compute (1 - u_t)h_{t - 1} + u_t c_t
             hid = (1 - updategate)*hid_previous + updategate*hidden_update # (batch, units)
 
-            gen_score = T.dot(hid, self.W_gen)
-            gen_log_probs = log_softmax(gen_score)
-            copy_score = T.batched_dot(T.tanh(T.dot(enc_feat, self.W_copy)), hid)
-            copy_score -= copy_score.max(axis = 1, keepdims = True)
-            copy_score_no_map = T.exp(copy_score)
-            copy_score_map = copy_score.dimshuffle(0, 1, 'x') * map - INF * (1 - map) # (batch, enc_len, vocab + extra)
-            copy_score_max = copy_score_map.max(axis = 1) # (batch, vocab + extra)
-            copy_score = T.exp(copy_score_map - copy_score_max.dimshuffle(0, 'x', 1)).sum(axis = 1) # (batch, vocab + extra)
-            copy_score = copy_score_max + T.log(copy_score)
-            copy_log_probs = log_softmax(copy_score) # (batch, vocab + extra)
-            copy_mask = map.max(axis = 1) # (batch, vocab + extra)
+            # gen_score = T.dot(hid, self.W_gen)
+            # gen_log_probs = log_softmax(gen_score)
+            # copy_score = T.batched_dot(T.tanh(T.dot(enc_feat, self.W_copy)), hid)
+            # copy_score -= copy_score.max(axis = 1, keepdims = True)
+            # copy_score_no_map = T.exp(copy_score)
+            # copy_score_map = copy_score.dimshuffle(0, 1, 'x') * map - INF * (1 - map) # (batch, enc_len, vocab + extra)
+            # copy_score_max = copy_score_map.max(axis = 1) # (batch, vocab + extra)
+            # copy_score = T.exp(copy_score_map - copy_score_max.dimshuffle(0, 'x', 1)).sum(axis = 1) # (batch, vocab + extra)
+            # copy_score = copy_score_max + T.log(copy_score)
+            # copy_log_probs = log_softmax(copy_score) # (batch, vocab + extra)
+            # copy_mask = map.max(axis = 1) # (batch, vocab + extra)
+            #
+            # copy_weight_sigmoid, copy_weight_log_sigmoid, copy_weight_log_neg_sigmoid = get_sigmoid_comb(T.dot(hid, self.W_mode))
+            # copy_weight_sigmoid = copy_weight_sigmoid.dimshuffle(0, 'x')
+            # copy_weight_log_sigmoid = copy_weight_log_sigmoid.dimshuffle(0, 'x')
+            # copy_weight_log_neg_sigmoid = copy_weight_log_neg_sigmoid.dimshuffle(0, 'x')
+            #
+            # log_probs_max = T.maximum(copy_log_probs[:, : self.word_cnt], gen_log_probs) # (batch, vocab)
+            # vocab_log_probs = T.log(T.exp(copy_log_probs[:, : self.word_cnt] - log_probs_max) * copy_weight_sigmoid + T.exp(gen_log_probs - log_probs_max) * (1 - copy_weight_sigmoid)) + log_probs_max
+            # vocab_copy_mask = copy_mask[:, : self.word_cnt]
+            # vocab_log_probs = vocab_copy_mask * vocab_log_probs + (1 - vocab_copy_mask) * (copy_weight_log_neg_sigmoid + gen_log_probs)
+            #
+            # extra_copy_mask = copy_mask[:, self.word_cnt :]
+            # extra_log_probs = copy_log_probs[:, self.word_cnt :] + copy_weight_log_sigmoid
+            # extra_log_probs = extra_copy_mask * extra_log_probs + (1 - extra_copy_mask) * (- INF)
+            #
+            # combined_probs = T.zeros_like(copy_log_probs)
+            # combined_probs = T.set_subtensor(combined_probs[:, : self.word_cnt], vocab_log_probs)
+            # combined_probs = T.set_subtensor(combined_probs[:, self.word_cnt :], extra_log_probs)
+            # prob = combined_probs
+            #
+            # next_input = T.cast(T.argmax(prob, axis = 1), 'int32')
+            #
+            # output_n = T.extra_ops.to_one_hot(next_input, self.word_cnt + self.extra_word_cnt) # (batch, vocab + extra)
+            # output_n = T.batched_dot(output_n, map.dimshuffle(0, 2, 1)) # (batch, enc_len)
+            # copy_probs = copy_score_no_map * output_n
+            # copy_probs = copy_probs / (T.sum(copy_probs, axis = 1, keepdims = True) + 1e-8) # (batch, enc_len)
+            # copy_hid = T.batched_dot(copy_probs, enc_feat) # (batch, units)
 
-            copy_weight_sigmoid, copy_weight_log_sigmoid, copy_weight_log_neg_sigmoid = get_sigmoid_comb(T.dot(hid, self.W_mode))
-            copy_weight_sigmoid = copy_weight_sigmoid.dimshuffle(0, 'x')
-            copy_weight_log_sigmoid = copy_weight_log_sigmoid.dimshuffle(0, 'x')
-            copy_weight_log_neg_sigmoid = copy_weight_log_neg_sigmoid.dimshuffle(0, 'x')
-
-            log_probs_max = T.maximum(copy_log_probs[:, : self.word_cnt], gen_log_probs) # (batch, vocab)
-            vocab_log_probs = T.log(T.exp(copy_log_probs[:, : self.word_cnt] - log_probs_max) * copy_weight_sigmoid + T.exp(gen_log_probs - log_probs_max) * (1 - copy_weight_sigmoid)) + log_probs_max
-            vocab_copy_mask = copy_mask[:, : self.word_cnt]
-            vocab_log_probs = vocab_copy_mask * vocab_log_probs + (1 - vocab_copy_mask) * (copy_weight_log_neg_sigmoid + gen_log_probs)
-
-            extra_copy_mask = copy_mask[:, self.word_cnt :]
-            extra_log_probs = copy_log_probs[:, self.word_cnt :] + copy_weight_log_sigmoid
-            extra_log_probs = extra_copy_mask * extra_log_probs + (1 - extra_copy_mask) * (- INF)
-
-            combined_probs = T.zeros_like(copy_log_probs)
-            combined_probs = T.set_subtensor(combined_probs[:, : self.word_cnt], vocab_log_probs)
-            combined_probs = T.set_subtensor(combined_probs[:, self.word_cnt :], extra_log_probs)
-            prob = combined_probs
-
-            next_input = T.cast(T.argmax(prob, axis = 1), 'int32')
-
-            output_n = T.extra_ops.to_one_hot(next_input, self.word_cnt + self.extra_word_cnt) # (batch, vocab + extra)
-            output_n = T.batched_dot(output_n, map.dimshuffle(0, 2, 1)) # (batch, enc_len)
-            copy_probs = copy_score_no_map * output_n
-            copy_probs = copy_probs / (T.sum(copy_probs, axis = 1, keepdims = True) + 1e-8) # (batch, enc_len)
-            copy_hid = T.batched_dot(copy_probs, enc_feat) # (batch, units)
-
-            return [next_input, hid, copy_hid]
+            return hid #[next_input, hid, copy_hid]
 
         step_fun = step
 

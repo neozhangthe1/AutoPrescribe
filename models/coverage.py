@@ -63,13 +63,13 @@ class CoverageModel:
         l_t = l_target_outputs
         l_target_outputs = lasagne.layers.ReshapeLayer(l_target_outputs, (-1, [2]))  # (batch * dec_len, vocab + extra)
 
-        l_gen = layers.GRUCopyTestLayer(config.dec_units, grad_clipping=config.grad_clipping,
+        l_gen = layers.GRUCoverageTestLayer(config.dec_units, grad_clipping=config.grad_clipping,
                                         source_token_cnt=processor.source_vocab_size, target_token_cnt=processor.target_vocab_size,
                                         l_enc_feat=l_source, l_enc_mask=l_source_mask_inputs,
                                         W_emb=self.W2, resetgate=l_t.resetgate, updategate=l_t.updategate,
                                         hidden_update=l_t.hidden_update, hid_init=l_source_last,
-                                        unk_index=processor.get_char_index('UNK'),
-                                        start_index=processor.get_char_index('START'), gen_len=config.target_len)
+                                        unk_index=processor.get_char_index('UNK', False),
+                                        start_index=processor.get_char_index('START', False), gen_len=config.target_len)
         self.l = l_target_outputs
 
         py = lasagne.layers.get_output(l_target_outputs)
