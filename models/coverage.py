@@ -223,10 +223,9 @@ class CoverageModel:
         min_measure = 1e6
 
         for epoch in range(self.config.max_epoch):
-            for step, (source_inputs, target_inputs, target_outputs, source_mask_inputs, target_mask_inputs, map_inputs,
+            for step, (source_inputs, target_inputs, target_outputs, source_mask_inputs, target_mask_inputs,
                        refs) in enumerate(p.gen_batch(p.train_data)):
-                self.train_fn(source_inputs, target_inputs, target_outputs, source_mask_inputs, target_mask_inputs,
-                              map_inputs)
+                self.train_fn(source_inputs, target_inputs, target_outputs, source_mask_inputs, target_mask_inputs)
                 if step % config.print_loss_per == 0:
                     train_loss = self.comp_loss(p.train_data)
                     dev_loss = self.comp_loss(p.dev_data)
@@ -243,22 +242,21 @@ class CoverageModel:
         max_reward = -1e6
 
         for epoch in range(self.config.max_epoch):
-            for step, (source_inputs, target_inputs, target_outputs, source_mask_inputs, target_mask_inputs, map_inputs,
+            for step, (source_inputs, target_inputs, target_outputs, source_mask_inputs, target_mask_inputs,
                        refs) in enumerate(p.gen_batch(p.train_data)):
-                samp_y = self.sample_fn(source_inputs, source_mask_inputs, map_inputs)
+                samp_y = self.sample_fn(source_inputs, source_mask_inputs)
                 for j in range(len(refs)):
                     refs[j].target_text = p.decode(samp_y[j], refs[j])
                     if j == 0:
                         print(u"".join(refs[j].target_text))
-                source_inputs, target_inputs, target_outputs, source_mask_inputs, target_mask_inputs, map_inputs = p.gen_one_batch(
+                source_inputs, target_inputs, target_outputs, source_mask_inputs, target_mask_inputs = p.gen_one_batch(
                     refs)
 
                 instances = [[ref.target_text, ref.source_text] for ref in refs]
                 rewards = np.array(scorer.predict(instances), dtype=np.float32)
                 rewards = np.tile(rewards, (config.target_len, 1)).transpose()  # (batch, dec_len)
 
-                self.reinforce_fn(source_inputs, target_inputs, target_outputs, source_mask_inputs, target_mask_inputs,
-                                  map_inputs, rewards)
+                self.reinforce_fn(source_inputs, target_inputs, target_outputs, source_mask_inputs, target_mask_inputs, rewards)
 
                 if step % config.print_reinforce_per == 0:
                     train_reward = self.comp_reinforce_loss(p.train_data, scorer)

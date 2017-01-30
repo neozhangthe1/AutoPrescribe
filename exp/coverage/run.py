@@ -6,7 +6,7 @@
 
 from models.processor import Processor
 from models.coverage import CoverageModel
-import config
+from exp.coverage import config1 as config
 
 config = config.get_config()
 
