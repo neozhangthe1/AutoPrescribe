@@ -394,7 +394,7 @@ class GRUCoverageTrainLayer(lasagne.layers.MergeLayer):
             # if scan is backward reverse the output
             if self.backwards:
                 prob_out = prob_out[:, ::-1]
-
+        print(prob_out.shape)
         return prob_out
 
 class GRUCoverageTestLayer(lasagne.layers.MergeLayer):
