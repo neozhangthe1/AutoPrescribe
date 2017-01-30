@@ -232,6 +232,8 @@ class CoverageModel:
         for epoch in range(self.config.max_epoch):
             for step, (source_inputs, target_inputs, target_outputs, source_mask_inputs, target_mask_inputs,
                        refs) in enumerate(p.gen_batch(p.train_data)):
+                for a in [source_inputs, target_inputs, target_outputs, source_mask_inputs, target_mask_inputs]:
+                    print(a.shape)
                 self.train_fn(source_inputs, target_inputs, target_outputs, source_mask_inputs, target_mask_inputs)
                 if step % config.print_loss_per == 0:
                     train_loss = self.comp_loss(p.train_data)

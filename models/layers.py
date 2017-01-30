@@ -154,6 +154,7 @@ class GRUCoverageTrainLayer(lasagne.layers.MergeLayer):
             return input_shape[0], input_shape[1], self.num_units
 
     def get_output_for(self, inputs, **kwargs):
+        print("1")
         # Retrieve the layer input
         input = inputs[0]
         # Retrieve the mask when it is supplied
@@ -164,6 +165,8 @@ class GRUCoverageTrainLayer(lasagne.layers.MergeLayer):
         if self.hid_init_incoming_index >= 0:
             hid_init = inputs[self.hid_init_incoming_index]
 
+
+        print("2")
         enc_feat = inputs[self.enc_feat_index]
         enc_mask = inputs[self.enc_mask_index]
         # map = inputs[self.map_index] # (batch, enc_len, vocab + extra)
@@ -175,7 +178,7 @@ class GRUCoverageTrainLayer(lasagne.layers.MergeLayer):
         output = output.dimshuffle(1, 0)
 
         seq_len, num_batch = input.shape
-
+        print("3")
         # Stack input weight matrices into a (num_inputs, 3*num_units)
         # matrix, which speeds up computation
         W_in_stacked = T.concatenate(
@@ -196,7 +199,7 @@ class GRUCoverageTrainLayer(lasagne.layers.MergeLayer):
         # We define a slicing function that extract the input to each GRU gate
         def slice_w(x, n):
             return x[:, n*self.num_units:(n+1)*self.num_units]
-
+        print("4")
         # Create single recurrent computation step function
         # input__n is the n'th vector of the input
         def step(input_n, output_n, hid_previous, *args):
@@ -208,7 +211,7 @@ class GRUCoverageTrainLayer(lasagne.layers.MergeLayer):
             copy_hid_previous: (batch, units); a vector that combines the hidden states using the copy probabilities at the last time step.
             """
             input_emb = self.W_emb[input_n]
-
+            print("5")
             # enc_feat: (batch, enc_len, units), hid_previous: (batch, units)
             att = T.batched_dot(enc_feat, hid_previous) # (batch, enc_len)
             att = T.nnet.softmax(att) * enc_mask # (batch, enc_len)
@@ -234,7 +237,7 @@ class GRUCoverageTrainLayer(lasagne.layers.MergeLayer):
             updategate = slice_w(hid_input, 1) + slice_w(input_n, 1)
             resetgate = self.nonlinearity_resetgate(resetgate)
             updategate = self.nonlinearity_updategate(updategate)
-
+            print("6")
             # Compute W_{xc}x_t + r_t \odot (W_{hc} h_{t - 1})
             hidden_update_in = slice_w(input_n, 2)
             hidden_update_hid = slice_w(hid_input, 2)
@@ -326,7 +329,7 @@ class GRUCoverageTrainLayer(lasagne.layers.MergeLayer):
             non_seqs += [W_in_stacked, b_stacked]
 
         non_seqs += [enc_feat, enc_mask, self.W_emb]
-
+        print("7")
         if self.unroll_scan:
             # Retrieve the dimensionality of the incoming layer
             input_shape = self.input_shapes[0]
