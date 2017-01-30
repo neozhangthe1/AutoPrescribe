@@ -69,6 +69,15 @@ class GRUCoverageTrainLayer(lasagne.layers.MergeLayer):
         incomings.append(l_output)
         self.output_index = len(incomings) - 1
 
+        print(incoming)
+
+        self.input_shapes = [incoming if isinstance(incoming, tuple)
+                             else incoming.output_shape
+                             for incoming in incomings]
+        self.input_layers = [None if isinstance(incoming, tuple)
+                             else incoming
+                             for incoming in incomings]
+
         # Initialize parent layer
         super(GRUCoverageTrainLayer, self).__init__(incomings, **kwargs)
 
