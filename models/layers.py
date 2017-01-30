@@ -551,7 +551,7 @@ class GRUCoverageTestLayer(lasagne.layers.MergeLayer):
         def slice_w(x, n):
             return x[:, n*self.num_units:(n+1)*self.num_units]
 
-        W_emb_comp = T.dot(T.ones((self.extra_word_cnt, 1)), self.W_emb[self.unk_index].dimshuffle('x', 0)) # (extra, emb)
+        W_emb_comp = T.dot(T.ones((self.target_token_cnt, 1)), self.W_emb[self.unk_index].dimshuffle('x', 0)) # (extra, emb)
         W_emb = T.concatenate([self.W_emb, W_emb_comp], axis = 0)
 
         # Create single recurrent computation step function
