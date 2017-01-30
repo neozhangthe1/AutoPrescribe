@@ -42,7 +42,7 @@ class GRUCoverageTrainLayer(lasagne.layers.MergeLayer):
                  target_token_cnt=None,
                  # extra_word_cnt=None,
                  W_emb=None,
-                 # W_gen=lasagne.init.GlorotUniform(),
+                 W_gen=lasagne.init.GlorotUniform(),
                  # W_copy=lasagne.init.GlorotUniform(),
                  # W_mode=lasagne.init.Normal(),
                  unk_index=None,
@@ -137,7 +137,7 @@ class GRUCoverageTrainLayer(lasagne.layers.MergeLayer):
                 hid_init, (1, self.num_units), name="hid_init",
                 trainable=learn_init, regularizable=False)
 
-        # self.W_gen = self.add_param(W_gen, (self.num_units, self.target_token_cnt), name = "W_gen")
+        self.W_gen = self.add_param(W_gen, (self.num_units, self.target_token_cnt), name = "W_gen")
         # self.W_copy = self.add_param(W_copy, (self.num_units, self.num_units), name = "W_copy")
         # self.W_mode = self.add_param(W_mode, (self.num_units, ), name = "W_mode")
 
@@ -154,7 +154,6 @@ class GRUCoverageTrainLayer(lasagne.layers.MergeLayer):
             return input_shape[0], input_shape[1], self.num_units
 
     def get_output_for(self, inputs, **kwargs):
-        print("1")
         # Retrieve the layer input
         input = inputs[0]
         # Retrieve the mask when it is supplied
@@ -166,7 +165,6 @@ class GRUCoverageTrainLayer(lasagne.layers.MergeLayer):
             hid_init = inputs[self.hid_init_incoming_index]
 
 
-        print("2")
         enc_feat = inputs[self.enc_feat_index]
         enc_mask = inputs[self.enc_mask_index]
         # map = inputs[self.map_index] # (batch, enc_len, vocab + extra)
@@ -178,7 +176,6 @@ class GRUCoverageTrainLayer(lasagne.layers.MergeLayer):
         output = output.dimshuffle(1, 0)
 
         seq_len, num_batch = input.shape
-        print("3")
         # Stack input weight matrices into a (num_inputs, 3*num_units)
         # matrix, which speeds up computation
         W_in_stacked = T.concatenate(
@@ -199,7 +196,6 @@ class GRUCoverageTrainLayer(lasagne.layers.MergeLayer):
         # We define a slicing function that extract the input to each GRU gate
         def slice_w(x, n):
             return x[:, n*self.num_units:(n+1)*self.num_units]
-        print("4")
         # Create single recurrent computation step function
         # input__n is the n'th vector of the input
         def step(input_n, output_n, hid_previous, *args):
@@ -211,7 +207,6 @@ class GRUCoverageTrainLayer(lasagne.layers.MergeLayer):
             copy_hid_previous: (batch, units); a vector that combines the hidden states using the copy probabilities at the last time step.
             """
             input_emb = self.W_emb[input_n]
-            print("5")
             # enc_feat: (batch, enc_len, units), hid_previous: (batch, units)
             att = T.batched_dot(enc_feat, hid_previous) # (batch, enc_len)
             att = T.nnet.softmax(att) * enc_mask # (batch, enc_len)
@@ -237,7 +232,6 @@ class GRUCoverageTrainLayer(lasagne.layers.MergeLayer):
             updategate = slice_w(hid_input, 1) + slice_w(input_n, 1)
             resetgate = self.nonlinearity_resetgate(resetgate)
             updategate = self.nonlinearity_updategate(updategate)
-            print("6")
             # Compute W_{xc}x_t + r_t \odot (W_{hc} h_{t - 1})
             hidden_update_in = slice_w(input_n, 2)
             hidden_update_hid = slice_w(hid_input, 2)
@@ -250,8 +244,8 @@ class GRUCoverageTrainLayer(lasagne.layers.MergeLayer):
             # Compute (1 - u_t)h_{t - 1} + u_t c_t
             hid = (1 - updategate)*hid_previous + updategate*hidden_update # (batch, units)
 
-            # gen_score = T.dot(hid, self.W_gen)
-            # gen_log_probs = log_softmax(gen_score)
+            gen_score = T.dot(hid, self.W_gen)
+            gen_log_probs = log_softmax(gen_score)
             # copy_score = T.batched_dot(T.tanh(T.dot(enc_feat, self.W_copy)), hid)
             # copy_score -= copy_score.max(axis = 1, keepdims = True)
             # copy_score_no_map = T.exp(copy_score)
@@ -285,24 +279,24 @@ class GRUCoverageTrainLayer(lasagne.layers.MergeLayer):
             # combined_probs = T.zeros_like(copy_log_probs)
             # combined_probs = T.set_subtensor(combined_probs[:, : self.word_cnt], vocab_log_probs)
             # combined_probs = T.set_subtensor(combined_probs[:, self.word_cnt :], extra_log_probs)
-            # prob = combined_probs
+            prob = gen_log_probs #combined_probs
 
-            return hid #[hid, copy_hid, prob]
+            return [hid, prob] #[hid, copy_hid, prob]
 
         def step_masked(input_n, output_n, mask_n, hid_previous, *args):
-            # [hid, copy_hid, prob] = step(input_n, output_n, hid_previous, copy_hid_previous, prob_previous, *args)
-            #
-            # # Skip over any input with mask 0 by copying the previous
-            # # hidden state; proceed normally for any input with mask 1.
-            # hid = T.switch(mask_n, hid, hid_previous)
-            #
-            # return [hid, copy_hid, prob]
-            hid = step(input_n, output_n, hid_previous, *args) #step(input_n, hid_previous, *args)
+            [hid, prob] = step(input_n, output_n, hid_previous, *args)
 
             # Skip over any input with mask 0 by copying the previous
             # hidden state; proceed normally for any input with mask 1.
             hid = T.switch(mask_n, hid, hid_previous)
-            return hid
+
+            return [hid, prob]
+            # hid = step(input_n, output_n, hid_previous, *args) #step(input_n, hid_previous, *args)
+            #
+            # # Skip over any input with mask 0 by copying the previous
+            # # hidden state; proceed normally for any input with mask 1.
+            # hid = T.switch(mask_n, hid, hid_previous)
+            # return hid
 
         if mask is not None:
             # mask is given as (batch_size, seq_len). Because scan iterates
@@ -329,26 +323,25 @@ class GRUCoverageTrainLayer(lasagne.layers.MergeLayer):
             non_seqs += [W_in_stacked, b_stacked]
 
         non_seqs += [enc_feat, enc_mask, self.W_emb]
-        print("7")
         if self.unroll_scan:
             # Retrieve the dimensionality of the incoming layer
             input_shape = self.input_shapes[0]
             # Explicitly unroll the recurrence instead of using scan
-            hid_out = unroll_scan(
+            [hid_out, prob_out] = unroll_scan(
                 fn=step_fun,
                 sequences=sequences,
-                outputs_info=[hid_init],
+                outputs_info=[hid_init, None],
                 go_backwards=self.backwards,
                 non_sequences=non_seqs,
                 n_steps=input_shape[1])[0]
         else:
             # Scan op iterates over first dimension of input and repeatedly
             # applies the step function
-            hid_out = theano.scan(
+            [hid_out, prob_out] = theano.scan(
                 fn=step_fun,
                 sequences=sequences,
                 go_backwards=self.backwards,
-                outputs_info=[hid_init],
+                outputs_info=[hid_init, None],
                 non_sequences=non_seqs,
                 truncate_gradient=self.gradient_steps,
                 strict=True)[0]
@@ -364,9 +357,8 @@ class GRUCoverageTrainLayer(lasagne.layers.MergeLayer):
             # if scan is backward reverse the output
             if self.backwards:
                 hid_out = hid_out[:, ::-1]
-        print("8")
         print(hid_out.shape)
-        return hid_out
+        return [hid_out, prob_out]
 
         # if self.unroll_scan:
         #     # Retrieve the dimensionality of the incoming layer
