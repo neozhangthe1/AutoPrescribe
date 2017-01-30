@@ -33,6 +33,7 @@ class Processor:
         if source:
             if token in self.source_vocab:
                 return self.source_vocab[token]
+
             return self.source_vocab['UNK']
         else:
             if token in self.target_vocab:
@@ -80,7 +81,7 @@ class Processor:
             if max_target_len == len(target_text) + 1:
                 target_outputs[i, max_target_len - 1] = self.get_char_index('END', False)
             else:
-                target_outputs[i, max_target_len - 1] = self.get_char_index(target_text[max_target_len - 1])
+                target_outputs[i, max_target_len - 1] = self.get_char_index(target_text[max_target_len - 1], False)
             for j in range(max_target_len - 1):
                 target_inputs[i, j + 1] = self.get_char_index(target_text[j], False)
                 target_outputs[i, j] = self.get_char_index(target_text[j], False)
