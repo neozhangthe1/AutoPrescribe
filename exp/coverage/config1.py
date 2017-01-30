@@ -17,7 +17,7 @@ class config:
     learning_rate = 1e-3
     reinforce_learning_rate = 1e-5
     max_loss_batch = 1
-    print_loss_per = 20
+    print_loss_per = 5
     print_reinforce_per = 10
     max_epoch = 1000000
 
