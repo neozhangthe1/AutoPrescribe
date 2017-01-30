@@ -131,7 +131,7 @@ class CoverageModel:
                    refs) in enumerate(p.gen_batch(data, shuffle=False)):
 
             cur_loss = self.loss_fn(source_inputs, target_inputs, target_outputs, source_mask_inputs,
-                                    target_mask_inputs, map_inputs)
+                                    target_mask_inputs)
             loss += cur_loss
             cnt += 1
 
