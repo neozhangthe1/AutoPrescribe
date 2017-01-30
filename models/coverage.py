@@ -175,7 +175,7 @@ class CoverageModel:
                 s = []
                 for j in range(gen_y.shape[1]):
                     char_index = gen_y[i, j]
-                    s.append(p.index2char[char_index])
+                    s.append(p.idx_to_target_token[char_index])
 
                 if training:
                     print("S:", refs[i].source_text)
