@@ -368,7 +368,7 @@ class GRUCoverageTrainLayer(lasagne.layers.MergeLayer):
             # Retrieve the dimensionality of the incoming layer
             input_shape = self.input_shapes[0]
             # Explicitly unroll the recurrence instead of using scan
-            [hid_out, _, prob_out] = unroll_scan(
+            hid_out = unroll_scan(
                 fn=step_fun,
                 sequences=sequences,
                 outputs_info=[hid_init, copy_hid_init, None],
@@ -378,7 +378,7 @@ class GRUCoverageTrainLayer(lasagne.layers.MergeLayer):
         else:
             # Scan op iterates over first dimension of input and repeatedly
             # applies the step function
-            [hid_out, _, prob_out] = theano.scan(
+            hid_out = theano.scan(
                 fn=step_fun,
                 sequences=sequences,
                 go_backwards=self.backwards,
@@ -389,17 +389,28 @@ class GRUCoverageTrainLayer(lasagne.layers.MergeLayer):
 
         # When it is requested that we only return the final sequence step,
         # we need to slice it out immediately after scan is applied
+        # if self.only_return_final:
+        #     prob_out = prob_out[-1]
+        # else:
+        #     # dimshuffle back to (n_batch, n_time_steps, n_features))
+        #     prob_out = prob_out.dimshuffle(1, 0, 2)
+        #
+        #     # if scan is backward reverse the output
+        #     if self.backwards:
+        #         prob_out = prob_out[:, ::-1]
+        #
+        # return prob_out
         if self.only_return_final:
-            prob_out = prob_out[-1]
+            hid_out = hid_out[-1]
         else:
             # dimshuffle back to (n_batch, n_time_steps, n_features))
-            prob_out = prob_out.dimshuffle(1, 0, 2)
+            hid_out = hid_out.dimshuffle(1, 0, 2)
 
             # if scan is backward reverse the output
             if self.backwards:
-                prob_out = prob_out[:, ::-1]
+                hid_out = hid_out[:, ::-1]
 
-        return prob_out
+        return hid_out
 
 class GRUCoverageTestLayer(lasagne.layers.MergeLayer):
     def __init__(self, num_units,
