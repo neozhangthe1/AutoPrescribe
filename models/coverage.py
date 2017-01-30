@@ -31,7 +31,7 @@ class CoverageModel:
         target_outputs = T.imatrix()
         source_mask_inputs = T.matrix()
         target_mask_inputs = T.matrix()
-        map_inputs = T.tensor3()
+        # map_inputs = T.tensor3()
 
         l_source_inputs = lasagne.layers.InputLayer(shape=(None, config.source_len), input_var=source_inputs)
         l_target_inputs = lasagne.layers.InputLayer(shape=(None, config.target_len), input_var=target_inputs)
@@ -90,14 +90,14 @@ class CoverageModel:
         gen_y = lasagne.layers.get_output(l_gen)
 
         self.train_fn = theano.function(
-                [source_inputs, target_inputs, target_outputs, source_mask_inputs, target_mask_inputs, map_inputs],
+                [source_inputs, target_inputs, target_outputs, source_mask_inputs, target_mask_inputs],
                 None, updates=updates, on_unused_input='ignore',
                 mode=NanGuardMode(nan_is_error=True, inf_is_error=True, big_is_error=True))
         self.loss_fn = theano.function(
-                [source_inputs, target_inputs, target_outputs, source_mask_inputs, target_mask_inputs, map_inputs],
+                [source_inputs, target_inputs, target_outputs, source_mask_inputs, target_mask_inputs],
                 loss, on_unused_input='ignore',
                 mode=NanGuardMode(nan_is_error=True, inf_is_error=True, big_is_error=True))
-        self.test_fn = theano.function([source_inputs, source_mask_inputs, map_inputs], gen_y, on_unused_input='ignore')
+        self.test_fn = theano.function([source_inputs, source_mask_inputs], gen_y, on_unused_input='ignore')
 
         # l_samp = layers.GRUCopyPureSampleLayer(config.dec_units, grad_clipping=config.grad_clipping,
         #                                        word_cnt=processor.char_cnt, extra_word_cnt=processor.extra_char_cnt,
@@ -173,9 +173,9 @@ class CoverageModel:
         p = self.processor
         if not training:
             fout = io.open(filename, 'w', encoding='utf-8')
-        for step, (source_inputs, target_inputs, target_outputs, source_mask_inputs, target_mask_inputs, map_inputs,
+        for step, (source_inputs, target_inputs, target_outputs, source_mask_inputs, target_mask_inputs,
                    refs) in enumerate(p.gen_batch(p.dev_data)):
-            gen_y = self.test_fn(source_inputs, source_mask_inputs, map_inputs)
+            gen_y = self.test_fn(source_inputs, source_mask_inputs)
             for i in range(gen_y.shape[0]):
                 if i >= 1 and training: break
                 s = []
@@ -227,6 +227,7 @@ class CoverageModel:
         config = self.config
 
         min_measure = 1e6
+        print("start train")
 
         for epoch in range(self.config.max_epoch):
             for step, (source_inputs, target_inputs, target_outputs, source_mask_inputs, target_mask_inputs,
