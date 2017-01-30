@@ -159,7 +159,7 @@ class CoverageModel:
 
     def save_params(self, filename):
         params = lasagne.layers.get_all_param_values(self.l)
-        fout = open(filename, 'w')
+        fout = open(filename, 'wb')
         pickle.dump(params, fout, pickle.HIGHEST_PROTOCOL)
         fout.close()
 
