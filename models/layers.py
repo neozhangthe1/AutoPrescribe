@@ -176,6 +176,7 @@ class GRUCoverageTrainLayer(lasagne.layers.MergeLayer):
         output = output.dimshuffle(1, 0)
 
         seq_len, num_batch = input.shape
+        print("seq len", seq_len, "num batch", num_batch)
         # Stack input weight matrices into a (num_inputs, 3*num_units)
         # matrix, which speeds up computation
         W_in_stacked = T.concatenate(
@@ -191,6 +192,8 @@ class GRUCoverageTrainLayer(lasagne.layers.MergeLayer):
         b_stacked = T.concatenate(
             [self.b_resetgate, self.b_updategate,
              self.b_hidden_update], axis=0)
+
+        print("W in", W_hid_stacked.shape)
 
         # When theano.scan calls step, input_n will be (n_batch, 3*num_units).
         # We define a slicing function that extract the input to each GRU gate
@@ -280,7 +283,7 @@ class GRUCoverageTrainLayer(lasagne.layers.MergeLayer):
             # combined_probs = T.set_subtensor(combined_probs[:, : self.word_cnt], vocab_log_probs)
             # combined_probs = T.set_subtensor(combined_probs[:, self.word_cnt :], extra_log_probs)
             prob = gen_log_probs #combined_probs
-
+            print("prob", prob)
             return [hid, prob] #[hid, copy_hid, prob]
 
         def step_masked(input_n, output_n, mask_n, hid_previous, *args):
@@ -382,7 +385,7 @@ class GRUCoverageTrainLayer(lasagne.layers.MergeLayer):
         #         non_sequences=non_seqs,
         #         truncate_gradient=self.gradient_steps,
         #         strict=True)[0]
-        #
+
         # When it is requested that we only return the final sequence step,
         # we need to slice it out immediately after scan is applied
         if self.only_return_final:
