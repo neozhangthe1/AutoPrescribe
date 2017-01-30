@@ -80,7 +80,7 @@ class CoverageModel:
 
         py = lasagne.layers.get_output(l_target_outputs)
         loss = (
-        py * T.extra_ops.to_one_hot(target_outputs.flatten(), processor.target_vocab_size+1)).sum(
+        py * T.extra_ops.to_one_hot(target_outputs.flatten(), processor.target_vocab_size)).sum(
             axis=1)  # (batch * dec_len)
         loss = - (loss * target_mask_inputs.flatten()).mean()
 
