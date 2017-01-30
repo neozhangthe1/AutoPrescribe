@@ -183,4 +183,4 @@ class Processor:
         return idx_to_source_token, idx_to_target_token
 
     def load(self, filename):
-        return pickle.load(open(filename))
+        return pickle.load(open(filename, "rb"))
