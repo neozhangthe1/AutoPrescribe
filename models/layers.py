@@ -364,7 +364,8 @@ class GRUCoverageTrainLayer(lasagne.layers.MergeLayer):
             # if scan is backward reverse the output
             if self.backwards:
                 hid_out = hid_out[:, ::-1]
-
+        print("8")
+        print(hid_out.shape)
         return hid_out
 
         # if self.unroll_scan:
