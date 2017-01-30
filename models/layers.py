@@ -226,9 +226,9 @@ class GRUCoverageTrainLayer(lasagne.layers.MergeLayer):
                 hid_input = theano.gradient.grad_clip(
                     hid_input, -self.grad_clipping, self.grad_clipping)
 
-            if not self.precompute_input:
-                # Compute W_{xr}x_t + b_r, W_{xu}x_t + b_u, and W_{xc}x_t + b_c
-                input_n = T.dot(input_n, W_in_stacked) + b_stacked
+            # if not self.precompute_input:
+            #     # Compute W_{xr}x_t + b_r, W_{xu}x_t + b_u, and W_{xc}x_t + b_c
+            #     input_n = T.dot(input_n, W_in_stacked) + b_stacked
 
             # Reset and update gates
             resetgate = slice_w(hid_input, 0) + slice_w(input_n, 0)
