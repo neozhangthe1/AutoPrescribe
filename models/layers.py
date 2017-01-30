@@ -660,7 +660,7 @@ class GRUCoverageTestLayer(lasagne.layers.MergeLayer):
         if not self.precompute_input:
             non_seqs += [W_in_stacked, b_stacked]
 
-        non_seqs += [enc_feat, enc_mask, self.W_emb]
+        non_seqs += [enc_feat, enc_mask, self.W_gen, self.W_emb]
 
         if self.unroll_scan:
             # Retrieve the dimensionality of the incoming layer
