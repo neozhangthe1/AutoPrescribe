@@ -8,8 +8,8 @@ class config:
     model_seed = 13
     vocab_size = 4000
     batch_size = 512
-    source_len = 20
-    target_len = 20
+    source_len = 50
+    target_len = 50
     embedding_size = 100
     enc_units = 256
     dec_units = 256

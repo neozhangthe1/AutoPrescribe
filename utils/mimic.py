@@ -57,3 +57,14 @@ def load_ndc_gpi_mapping():
 
     dump(ndc_to_gpi_6, "ndc_to_gpi_6.pkl")
 
+def load_mapping():
+    diag_drug_mapping = load("diag_drug_mapping.pkl")
+    diag_to_drug = {}
+    drug_to_diag = {}
+    for diag in diag_drug_mapping[0]:
+        diag_to_drug[diag.replace(".", "")] = diag_drug_mapping[0][diag]
+    for drug in diag_drug_mapping[1]:
+        drug_to_diag[drug] = []
+        for diag in diag_drug_mapping[1][drug]:
+            drug_to_diag[drug].append(diag.replace(".", ""))
+    dump((diag_to_drug, drug_to_diag), "mimic_diag_drug_mapping.pkl")
