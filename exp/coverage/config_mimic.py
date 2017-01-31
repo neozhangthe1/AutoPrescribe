@@ -22,7 +22,7 @@ class config:
     max_epoch = 1000000
 
     dir = 'build/'
-    saved_model_file = dir + 'mimic_seq2seq_seed{}_{}d_lr{}_h{}.model'.format(model_seed, embedding_size, learning_rate, enc_units)
+    saved_model_file = dir + 'mimic_sort_seq2seq_len_{}_seed{}_{}d_lr{}_h{}.model'.format(source_len, model_seed, embedding_size, learning_rate, enc_units)
 
 def get_config():
     return config()

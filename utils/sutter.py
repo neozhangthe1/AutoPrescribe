@@ -230,6 +230,19 @@ def gen_parallel_text():
     f_out2.close()
 
 
+def sort_encounter():
+    train = load("sutter_encounter.train.pkl")
+    test = load("sutter_encounter.dev.pkl")
+    sorted_train = []
+    sorted_test = []
+    for d in train:
+        sorted_train.append((d[0], sorted(d[1])))
+    for d in test:
+        sorted_test.append((d[0], sorted(d[1])))
+    dump(sorted_train, "sutter_encounter_sorted.train.pkl")
+    dump(sorted_test, "sutter_encounter_sorted.dev.pkl")
+
+
 def extract_mapping():
     medications = load_medication_details()
     cnt = 0

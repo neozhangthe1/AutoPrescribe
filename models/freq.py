@@ -52,7 +52,7 @@ def train():
 def train_mimic():
     train_set = load("mimic_encounter_gpi.train.pkl")
     test_set = load("mimic_encounter_gpi.dev.pkl")
-    mfm = MostFreqMatch(1, "mimic")
+    mfm = MostFreqMatch(3, "mimic")
     mfm.fit(train_set)
     results = []
     prediction_list = []

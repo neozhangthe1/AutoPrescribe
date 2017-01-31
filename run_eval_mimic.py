@@ -50,13 +50,17 @@ cnt = 0
 results = []
 input = []
 truth = []
-for line in open("seq2seq.h256.txt"):
+for line in open("mimic_seq2seq.h256.txt"):
     if cnt % 3 == 0:
         input = set(line.strip().split("S: ")[1].split(" "))
     if cnt % 3 == 1:
+        if len(line.strip().split("T: ")) <= 1:
+            truth = []
+            continue
         truth = set(line.strip().split("T: ")[1].split(" "))
     if cnt % 3 == 2:
         result = set(line.strip().split("Gen: ")[1].replace("END", "").strip().split(" "))
-        results.append((input, truth, result))
+        if len(truth) > 0:
+            results.append((input, truth, result))
     cnt += 1
 dump(results, "mimic_result_seq2seq_3_80.pkl")

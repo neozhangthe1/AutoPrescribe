@@ -1,8 +1,8 @@
 
 class config:
     # pkl_file = '../data/baixing.pairs.pkl'
-    train_pkl = 'data/sutter_encounter.train.pkl'
-    dev_pkl = 'data/sutter_encounter.dev.pkl'
+    train_pkl = 'data/sutter_encounter_sorted.train.pkl'
+    dev_pkl = 'data/sutter_encounter_sorted.dev.pkl'
     source_vocab_pkl = 'data/sutter_diag_vocab.pkl'
     target_vocab_pkl = 'data/sutter_drug_vocab_3.pkl'
     model_seed = 13
@@ -22,7 +22,7 @@ class config:
     max_epoch = 1000000
 
     dir = 'build/'
-    saved_model_file = dir + 'rf_seed{}_{}d_lr{}_h{}.model'.format(model_seed, embedding_size, learning_rate, enc_units)
+    saved_model_file = dir + 'sutter_seq2seq_sorted_seed{}_{}d_lr{}_h{}.model'.format(model_seed, embedding_size, learning_rate, enc_units)
 
 def get_config():
     return config()
