@@ -47,3 +47,9 @@ def train():
         sum_jaccard += eva.get_jaccard_k(item[1], result)
 
 
+def eval_freq():
+    mfm = MostFreqMatch()
+    mfm.load()
+    evaluator = Evaluator()
+    evaluator.eval(mfm)
+    evaluator.eval_golden(mfm)

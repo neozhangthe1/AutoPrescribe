@@ -164,13 +164,6 @@ def get_macro_f1(truth_list, prediction_list):
     print(np.average(list(f1.values())))
 
 
-def eval_freq():
-    mfm = MostFreqMatch()
-    mfm.load()
-    evaluator = Evaluator()
-    evaluator.eval(mfm)
-    evaluator.eval_golden(mfm)
-
 
 def eval_emb():
     evaluator = Evaluator()
