@@ -1,8 +1,8 @@
 
 class config:
     # pkl_file = '../data/baixing.pairs.pkl'
-    train_pkl = 'data/mimic_encounter_gpi.train.pkl'
-    dev_pkl = 'data/mimic_encounter_gpi.dev.pkl'
+    train_pkl = 'data/mimic_encounter_gpi_sorted.train.pkl'
+    dev_pkl = 'data/mimic_encounter_gpi_sorted.dev.pkl'
     source_vocab_pkl = 'data/mimic_diag_vocab.pkl'
     target_vocab_pkl = 'data/mimic_drug_vocab.pkl'
     model_seed = 13
@@ -22,7 +22,7 @@ class config:
     max_epoch = 1000000
 
     dir = 'build/'
-    saved_model_file = dir + 'mimic_sort_seq2seq_len_{}_seed{}_{}d_lr{}_h{}.model'.format(source_len, model_seed, embedding_size, learning_rate, enc_units)
+    saved_model_file = dir + 'mimic_sorted_seq2seq_len_{}_seed{}_{}d_lr{}_h{}.model'.format(source_len, model_seed, embedding_size, learning_rate, enc_units)
 
 def get_config():
     return config()

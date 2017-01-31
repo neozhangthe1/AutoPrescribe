@@ -68,3 +68,15 @@ def load_mapping():
         for diag in diag_drug_mapping[1][drug]:
             drug_to_diag[drug].append(diag.replace(".", ""))
     dump((diag_to_drug, drug_to_diag), "mimic_diag_drug_mapping.pkl")
+
+def sort_encounter():
+    train = load("mimic_encounter_gpi.train.pkl")
+    test = load("mimic_encounter_gpi.dev.pkl")
+    sorted_train = []
+    sorted_test = []
+    for d in train:
+        sorted_train.append((d[0], sorted(d[1])))
+    for d in test:
+        sorted_test.append((d[0], sorted(d[1])))
+    dump(sorted_train, "mimic_encounter_gpi_sorted.train.pkl")
+    dump(sorted_test, "mimic_encounter_gpi_sorted.dev.pkl")
