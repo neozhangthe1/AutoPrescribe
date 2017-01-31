@@ -182,7 +182,7 @@ class CoverageModel:
                     print("T:", refs[i].target_text)
                     print("Gen:", u"".join(s))
                 else:
-                    fout.write(u"S: {}\n".format(refs[i].source_text))
+                    fout.write(u"S: {}\n".format(u" ".join(refs[i].source_text)))
                     fout.write(u"T: {}\n".format(u" ".join(refs[i].target_text))) #refs[i].target_text))
                     fout.write(u"Gen: {}\n".format(u" ".join(s)))
             if max_batch is not None and step >= max_batch - 1: break

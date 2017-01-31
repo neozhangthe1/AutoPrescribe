@@ -124,11 +124,21 @@ class Evaluator(object):
             return 0
         return float(interaction) / union
 
-    def get_accuracy(self, truth, prediction):
-        if set(prediction) == set(truth):
-            return 1.
-        else:
-            return 0.
+def get_accuracy(truth, prediction):
+    if set(prediction) == set(truth):
+        return 1.
+    else:
+        return 0.
+
+def get_average_accuracy(truth_list, prediction_list):
+    acc = 0.0
+    cnt = 0
+    for i, item in enumerate(prediction_list):
+        acc += get_accuracy(truth_list[i], item)
+        cnt += 1
+    print(acc / cnt)
+
+
 
 def get_macro_f1(truth_list, prediction_list):
     tp = dd(float)
@@ -151,7 +161,7 @@ def get_macro_f1(truth_list, prediction_list):
             precision[c] = 0
         recall[c] = tp[c] / true[c]
         f1[c] = 0 if (precision[c] + recall[c]) == 0 else 2 * (precision[c] * recall[c]) / (precision[c] + recall[c])
-    print(np.average(f1.values()))
+    print(np.average(list(f1.values())))
 
 
 def eval_freq():
