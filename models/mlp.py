@@ -4,6 +4,7 @@ from keras.optimizers import SGD
 from keras.models import load_model
 import numpy as np
 from utils.data import get_model_path, load
+from sklearn import metrics
 
 
 class MLP(object):
@@ -47,6 +48,7 @@ class MLP(object):
 
     def fit(self, epoch):
         self.model.fit(self.train_x, self.train_y, validation_data=(self.test_x, self.test_y), nb_epoch=50, batch_size=32, verbose=True)
+        self.model.save("sutter_mlp_model.h5")
 
     def eval(self):
         loss_and_metrics = self.model.evaluate(self.test_x, self.test_y, batch_size=32)
@@ -61,29 +63,30 @@ class MLP(object):
 def train():
     input_vocab = load("sutter_diag_vocab.pkl")
     output_vocab = load("sutter_drug_vocab_3.pkl")
-    encounters = load("sutter_encounters_3.pkl")
+    train_encounters = load("sutter_encounter.train.pkl")
+    test_encounters  = load("sutter_encounter.dev.pkl")
     test_set = []
     train_set = []
-    for enc in encounters[:1000000]:
+    for enc in train_encounters:
         train_set.append(([input_vocab[code] for code in enc[0]], [output_vocab[code] for code in enc[1]]))
-    for enc in encounters[1000000:]:
+    for enc in test_encounters:
         test_set.append(([input_vocab[code] for code in enc[0]], [output_vocab[code] for code in enc[1]]))
     mlp = MLP()
-    mlp.load_data(train_set, test_set, len(input_vocab), len(output_vocab))
+    mlp.load_data(train_set, test_set[:1000], len(input_vocab), len(output_vocab))
     mlp.build_model()
     mlp.fit(1)
+
+
+    mlp.predict(test_set)
 
 def test():
     input_vocab = load("sutter_diag_vocab.pkl")
     output_vocab = load("sutter_drug_vocab_3.pkl")
-    encounters = load("sutter_encounters_3.pkl")
+    test_encounters  = load("sutter_encounter.dev.pkl")
     test_set = []
-    train_set = []
-    for enc in encounters[:1000000]:
-        train_set.append(([input_vocab[code] for code in enc[0]], [output_vocab[code] for code in enc[1]]))
-    for enc in encounters[1000000:]:
+    for enc in test_encounters:
         test_set.append(([input_vocab[code] for code in enc[0]], [output_vocab[code] for code in enc[1]]))
-    mlp = load_model("mlp_sutter.model")
+    mlp = load_model("sutter_mlp_model.h5")
 
     input_dim = len(input_vocab)
     output_dim = len(output_vocab)
@@ -95,7 +98,53 @@ def test():
             test_x[i, j] = 1
         for j in pair[1]:
             test_y[i, j] = 1
-    for item in test_set:
-    mlp.load_data(train_set, test_set, len(input_vocab), len(output_vocab))
-    mlp.build_model()
-    mlp.fit(1)
+
+    index_to_source = {}
+    index_to_target = {}
+    for token in input_vocab:
+        index_to_source[input_vocab[token]] = token
+    for token in output_vocab:
+        index_to_target[output_vocab[token]] = token
+
+    for i in range(1, 10):
+        threshold = float(i) / 20.0
+        results = mlp.predict(test_x)
+
+        results[results >= threshold] = 1
+        results[results < threshold] = 0
+
+        jaccard = metrics.jaccard_similarity_score(test_y, results)
+        print(threshold, jaccard)
+
+    results = mlp.predict(test_x)
+    results[results >= 0.15] = 1
+    results[results < 0.15] = 0
+    cnts, indices = results.nonzero()
+    jaccard = metrics.jaccard_similarity_score(test_y, results)
+    zero_one = metrics.jaccard_similarity_score(test_y, results)
+
+
+    outputs = [[] for i in range(len(test_set))]
+    for i, cnt in enumerate(cnts):
+        outputs[cnt].append(index_to_target[indices[i]])
+
+    merge = []
+    for i, item in enumerate(outputs):
+        print(test_encounters[i][0])
+        print(test_encounters[i][1])
+        print(outputs[i])
+        print("")
+
+        merge.append(list(test_encounters[i]) + [outputs[i]])
+
+    from utils.data import dump
+    dump(merge, "sutter_result_mlp_0.15.pkl")
+
+    truth_list = []
+    prediction_list = []
+    for enc in merge:
+        truth_list.append(enc[1])
+        prediction_list.append(enc[2])
+
+
+

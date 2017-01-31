@@ -2,7 +2,7 @@ from utils.data import load, dump
 from collections import defaultdict as dd
 import numpy as np
 
-from models import MostFreqMatch, Embedding, GoldenRule
+# from models import MostFreqMatch, Embedding, GoldenRule
 
 
 class Evaluator(object):
@@ -123,6 +123,35 @@ class Evaluator(object):
         if union == 0:
             return 0
         return float(interaction) / union
+
+    def get_accuracy(self, truth, prediction):
+        if set(prediction) == set(truth):
+            return 1.
+        else:
+            return 0.
+
+def get_macro_f1(truth_list, prediction_list):
+    tp = dd(float)
+    true = dd(float)
+    predict = dd(float)
+    for i, item in enumerate(prediction_list):
+        for token in item:
+            predict[token] += 1
+            if token in truth_list[i]:
+                tp[token] += 1
+        for token in truth_list[i]:
+            true[token] += 1
+    precision = {}
+    recall = {}
+    f1 = {}
+    for c in true:
+        if c in predict:
+            precision[c] = tp[c] / predict[c]
+        else:
+            precision[c] = 0
+        recall[c] = tp[c] / true[c]
+        f1[c] = 0 if (precision[c] + recall[c]) == 0 else 2 * (precision[c] * recall[c]) / (precision[c] + recall[c])
+    print(np.average(f1.values()))
 
 
 def eval_freq():

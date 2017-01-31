@@ -18,8 +18,24 @@ model = CoverageModel(p, config)
 
 model.load_params('build/seq2seq__seed13_100d_lr0.001_h256.model_1.30')
 # model.do_reinforce(scorer)
-model.do_eval(training = False, filename = 'seq2seq.h256.txt', max_batch = 5)
+model.do_eval(training = False, filename = 'seq2seq.h256.txt', max_batch = 5000)
 
 # model.load_params('../models/resume_seed13_100d_lr0.001_h256.model')
 # data = [[u"出售哈士奇", u"随便写点什么"]]
 # ret = model.do_generate(data)
+
+from utils.eval import Evaluator
+eva = Evaluator()
+cnt = 0
+truth = []
+sum_jaccard = 0
+for line in open("seq2seq.h256.txt"):
+    if cnt % 3 == 1:
+        truth = set(line.strip().split("T: ")[1].split(" "))
+    if cnt % 3 == 2:
+        result = set(line.strip().split("Gen: ")[1].replace("END", "").strip().split(" "))
+        jaccard = eva.get_jaccard_k(truth, result)
+        sum_jaccard += jaccard
+    cnt += 1
+
+print(sum_jaccard * 3 / cnt)

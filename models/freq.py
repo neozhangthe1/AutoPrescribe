@@ -1,6 +1,6 @@
 from utils.data import load, dump
 from collections import defaultdict as dd
-
+from utils.eval import Evaluator
 
 class MostFreqMatch(object):
     def __init__(self, k=3):
@@ -34,8 +34,16 @@ class MostFreqMatch(object):
 def train():
     input_vocab = load("sutter_diag_vocab.pkl")
     output_vocab = load("sutter_drug_vocab_3.pkl")
-    test_set = load("sutter_encounters_3.pkl")[:1000000]
-    train_set = load("sutter_encounters_3.pkl")[1000000:]
+    train_set = load("sutter_encounter.train.pkl")
+    test_set = load("sutter_encounter.dev.pkl")
     mfm = MostFreqMatch(1)
     mfm.fit(train_set)
+    eva = Evaluator()
+
+    sum_jaccard = 0
+    cnt = 0
+    for item in test_set:
+        result = mfm.predict(item[0])
+        sum_jaccard += eva.get_jaccard_k(item[1], result)
+
 
