@@ -8,11 +8,12 @@ from sklearn import metrics
 
 
 class MLP(object):
-    def __init__(self):
+    def __init__(self, data="sutter"):
         self.model = Sequential()
         self.train_x, self.train_y, self.test_x, self.test_y = [], [], [], []
         self.input_dim = 0
         self.output_dim = 0
+        self.data = data
 
     def build_model(self):
         self.model.add(Dense(output_dim=2000, input_dim=self.input_dim))
@@ -47,8 +48,8 @@ class MLP(object):
                 self.test_y[i, j] = 1
 
     def fit(self, epoch):
-        self.model.fit(self.train_x, self.train_y, validation_data=(self.test_x, self.test_y), nb_epoch=50, batch_size=32, verbose=True)
-        self.model.save("sutter_mlp_model.h5")
+        self.model.fit(self.train_x, self.train_y, validation_data=(self.test_x, self.test_y), nb_epoch=epoch, batch_size=32, verbose=True)
+        self.model.save(self.data + "_mlp_model.h5")
 
     def eval(self):
         loss_and_metrics = self.model.evaluate(self.test_x, self.test_y, batch_size=32)
@@ -75,8 +76,23 @@ def train():
     mlp.load_data(train_set, test_set[:1000], len(input_vocab), len(output_vocab))
     mlp.build_model()
     mlp.fit(1)
+    mlp.predict(test_set)
 
-
+def train_mimic():
+    input_vocab = load("mimic_diag_vocab.pkl")
+    output_vocab = load("mimic_drug_vocab.pkl")
+    train_encounters = load("mimic_encounter_gpi.train.pkl")
+    test_encounters  = load("mimic_encounter_gpi.dev.pkl")
+    test_set = []
+    train_set = []
+    for enc in train_encounters:
+        train_set.append(([input_vocab[code] for code in enc[0]], [output_vocab[code] for code in enc[1]]))
+    for enc in test_encounters:
+        test_set.append(([input_vocab[code] for code in enc[0]], [output_vocab[code] for code in enc[1]]))
+    mlp = MLP("mimic")
+    mlp.load_data(train_set, test_set, len(input_vocab), len(output_vocab))
+    mlp.build_model()
+    mlp.fit(5)
     mlp.predict(test_set)
 
 def test():
@@ -107,8 +123,8 @@ def test():
         index_to_target[output_vocab[token]] = token
 
     for i in range(1, 10):
-        threshold = float(i) / 20.0
-        results = mlp.predict(test_x)
+        threshold = float(i) / 500.0
+        labels, results = mlp.predict(test_x)
 
         results[results >= threshold] = 1
         results[results < threshold] = 0
@@ -116,9 +132,9 @@ def test():
         jaccard = metrics.jaccard_similarity_score(test_y, results)
         print(threshold, jaccard)
 
-    results = mlp.predict(test_x)
-    results[results >= 0.15] = 1
-    results[results < 0.15] = 0
+    labels, results = mlp.predict(test_x)
+    results[results >= 0.012] = 1
+    results[results < 0.012] = 0
     cnts, indices = results.nonzero()
     jaccard = metrics.jaccard_similarity_score(test_y, results)
     zero_one = metrics.jaccard_similarity_score(test_y, results)
@@ -138,7 +154,7 @@ def test():
         merge.append(list(test_encounters[i]) + [outputs[i]])
 
     from utils.data import dump
-    dump(merge, "sutter_result_mlp_0.15.pkl")
+    dump(merge, "mimic_result_mlp_0.012.pkl")
 
     truth_list = []
     prediction_list = []

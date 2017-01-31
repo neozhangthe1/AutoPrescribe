@@ -92,6 +92,7 @@ def load_medication_details():
             cnt += 1
             x = line.split("\t")
             medications[x[0]] = x
+    return medications
 
 
 def join_encounters(valid_encounters, meds, medications):
@@ -230,8 +231,9 @@ def gen_parallel_text():
 
 
 def extract_mapping():
+    medications = load_medication_details()
     cnt = 0
-    records = dd(lambda: dd(lambda: dd(list)))
+    records = {}
     with codecs.open("SUTTER_ORDER_MED_DETAIL_V1.tab", "r", encoding='utf-8', errors='ignore') as f_in:
         next(f_in)
         for line in f_in:
@@ -239,4 +241,23 @@ def extract_mapping():
                 print(cnt, len(records), line)
             cnt += 1
             x = line.strip().split("\t")
-            records[x[0]][x[9]][x[1]].append(x)
+            if x[-1] in medications and medications[x[-1]][7] != "":
+                records[x[1]] = (x[2], medications[x[-1]][7])
+
+    diag_cnt = dd(int)
+    diag_drug_pair_cnt = dd(int)
+    drug_cnt = dd(int)
+    for diag, drug in records.values():
+        diag_drug_pair_cnt[(diag, drug[:6])] += 1
+        diag_cnt[diag] += 1
+        drug_cnt[drug[:6]] += 1
+
+
+    sorted_diag_drug_pair = sorted(diag_drug_pair_cnt.items(),key=lambda x: x[1], reverse=True)
+
+    diag_to_drug = dd(list)
+    drug_to_diag = dd(list)
+    for diag, drug in diag_drug_pair_cnt:
+        diag_to_drug[diag].append(drug)
+        drug_to_diag[drug].append(diag)
+    dump((dict(diag_to_drug), dict(drug_to_diag)), "diag_drug_mapping.pkl")

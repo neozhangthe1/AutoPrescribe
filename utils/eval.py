@@ -68,61 +68,85 @@ class Evaluator(object):
 
         return precision, recall, jaccard
     
-    def get_golden_eval(self, inputs, prediction):
-        prediction = set(prediction)
-        all_output = []
-        mapping = dd(list)
-        for c1 in inputs:
-            if c1 in self.golden_rule:
-                all_output.extend(self.golden_rule[c1])
-                for c2 in self.golden_rule[c1]:
-                    mapping[c2].append(c1)
-        all_output = set(all_output)
-        tp = prediction.intersection(all_output)
+def get_golden_eval(inputs, prediction, diag_to_drug, drug_to_diag):
+    prediction = set(prediction)
+    all_valid_output = []
+    for c1 in inputs:
+        if c1 in diag_to_drug:
+            all_valid_output.extend(diag_to_drug[c1])
+    all_valid_output = set(all_valid_output)
+    tp = prediction.intersection(all_valid_output)
 
-        precision = 0 if len(prediction) == 0 else float(len(tp)) / len(prediction)
+    precision = 0 if len(prediction) == 0 else float(len(tp)) / len(prediction)
 
-        coverage = []
-        for c in prediction:
-            if c in mapping:
-                coverage.extend(mapping[c])
-        tp = set(coverage).intersection(set(inputs))
-        recall = 0 if len(inputs) == 0 else float(len(tp)) / len(inputs)
+    all_valid_input = []
+    for c in prediction:
+        if c in drug_to_diag:
+            all_valid_input.extend(drug_to_diag[c])
+    tp = set(all_valid_input).intersection(set(inputs))
+    recall = 0 if len(inputs) == 0 else float(len(tp)) / len(inputs)
 
-        return precision, recall
+    return precision, recall
 
-    def get_jaccard_k(self, truth, prediction, k=1):
-        import itertools
+def get_average_golden_eval(input_list, prediction_list):
+    diag_to_drug, drug_to_diag = load("diag_drug_mapping.pkl")
+    ave_precision, ave_recall = 0.0, 0.0
+    for i, item in enumerate(input_list):
+        precision, recall = get_golden_eval(item, prediction_list[i], diag_to_drug, drug_to_diag)
+        ave_precision += precision
+        ave_recall += recall
+        if i % 1000 == 0:
+            print(ave_precision / (i+1), ave_recall / (i+1), precision, recall)
 
-        def get_set_product(set1, kk):
-            results = set()
-            if kk == 2:
-                for item in itertools.product(set1, set1):
-                    if len(set(item)) == len(item):
-                        results.add(tuple(sorted(item)))
-            elif kk == 3:
-                for item in itertools.product(set1, set1, set1):
-                    if len(set(item)) == len(item):
-                        results.add(tuple(sorted(item)))
-            return results
+def evaluate(name):
+    results = load(name)
+    input_list, truth_list, prediction_list = [], [], []
+    for i, result in enumerate(results):
+        input_list.append(result[0])
+        truth_list.append(result[1])
+        prediction_list.append(result[2])
 
-        s1 = set(truth)
-        s2 = set(prediction)
-        if k > 1:
-            for item in get_set_product(truth, 2):
-                s1.add(item)
-            for item in get_set_product(prediction, 2):
-                s2.add(item)
-        if k > 2:
-            for item in get_set_product(truth, 3):
-                s1.add(item)
-            for item in get_set_product(prediction, 3):
-                s2.add(item)
-        interaction = len(s1.intersection(s2))
-        union = len(s1.union(s2))
-        if union == 0:
-            return 0
-        return float(interaction) / union
+
+def get_jaccard_k(truth, prediction, k=1):
+    import itertools
+
+    def get_set_product(set1, kk):
+        results = set()
+        if kk == 2:
+            for item in itertools.product(set1, set1):
+                if len(set(item)) == len(item):
+                    results.add(tuple(sorted(item)))
+        elif kk == 3:
+            for item in itertools.product(set1, set1, set1):
+                if len(set(item)) == len(item):
+                    results.add(tuple(sorted(item)))
+        return results
+
+    s1 = set(truth)
+    s2 = set(prediction)
+    if k > 1:
+        for item in get_set_product(truth, 2):
+            s1.add(item)
+        for item in get_set_product(prediction, 2):
+            s2.add(item)
+    if k > 2:
+        for item in get_set_product(truth, 3):
+            s1.add(item)
+        for item in get_set_product(prediction, 3):
+            s2.add(item)
+    interaction = len(s1.intersection(s2))
+    union = len(s1.union(s2))
+    if union == 0:
+        return 0
+    return float(interaction) / union
+
+def get_average_jaccard(truth_list, prediction_list):
+    jaccard = 0.0
+    cnt = 0
+    for i, item in enumerate(prediction_list):
+        jaccard += get_jaccard_k(truth_list[i], item)
+        cnt += 1
+    print(jaccard / cnt)
 
 def get_accuracy(truth, prediction):
     if set(prediction) == set(truth):

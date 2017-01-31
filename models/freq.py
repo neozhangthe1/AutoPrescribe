@@ -3,9 +3,10 @@ from collections import defaultdict as dd
 from utils.eval import Evaluator
 
 class MostFreqMatch(object):
-    def __init__(self, k=3):
+    def __init__(self, k=1, data="sutter"):
         self.freq = {}
         self.k = k
+        self.data = data
 
     def fit(self, train_set):
         freq = dd(lambda: dd(int))
@@ -17,9 +18,11 @@ class MostFreqMatch(object):
             sorted_freq = sorted(freq[tk].items(), key=lambda x: x[1], reverse=True)
             self.freq[tk] = sorted_freq
 
-        dump(dict(self.freq), "sutter_freq.pkl")
+        dump(dict(self.freq), self.data + "_freq.pkl")
 
-    def load(self, path="mimic_freq.pkl"):
+    def load(self, path):
+        if path is None:
+            path = self.data + "_freq.pkl"
         self.freq = load(path)
 
     def predict(self, inputs):
@@ -46,10 +49,39 @@ def train():
         result = mfm.predict(item[0])
         sum_jaccard += eva.get_jaccard_k(item[1], result)
 
+def train_mimic():
+    train_set = load("mimic_encounter_gpi.train.pkl")
+    test_set = load("mimic_encounter_gpi.dev.pkl")
+    mfm = MostFreqMatch(1, "mimic")
+    mfm.fit(train_set)
+    results = []
+    prediction_list = []
+    truth_list = []
+    for item in test_set:
+        prediction = mfm.predict(item[0])
+        prediction_list.append(prediction)
+        truth_list.append(item[1])
+        results.append((item[0], item[1], prediction))
+    dump(results, "mimic_result_freq.pkl")
+
 
 def eval_freq():
-    mfm = MostFreqMatch()
-    mfm.load()
+    input_vocab = load("sutter_diag_vocab.pkl")
+    output_vocab = load("sutter_drug_vocab_3.pkl")
+    test_set = load("sutter_encounter.dev.pkl")
+    mfm = MostFreqMatch(1)
+    mfm.load("sutter_freq.pkl")
+    results = []
+    prediction_list = []
+    truth_list = []
+    for item in test_set:
+        prediction = mfm.predict(item[0])
+        prediction_list.append(prediction)
+        truth_list.append(item[1])
+        results.append((item[0], item[1], prediction))
+    dump(results, "sutter_result_freq.pkl")
+
+
     evaluator = Evaluator()
     evaluator.eval(mfm)
     evaluator.eval_golden(mfm)

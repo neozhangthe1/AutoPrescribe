@@ -3,6 +3,8 @@ import os
 import csv
 from collections import defaultdict as dd
 import codecs
+import random
+import numpy as np
 
 directory = "data/"
 model_directory = "build/"
