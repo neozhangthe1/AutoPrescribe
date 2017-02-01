@@ -11,9 +11,9 @@ model = CoverageModel(p, config)
 
 # model.do_train()
 
-model.load_params('build/mimic_seq2seq_seed13_100d_lr0.001_h256.model_3_80')
+model.load_params('build/mimic_sorted_seq2seq_len_50_seed13_100d_lr0.001_h256.model')
 # model.do_reinforce(scorer)
-model.do_eval(training = False, filename = 'mimic_seq2seq.h256.txt', max_batch = 5000)
+model.do_eval(training = False, filename = 'mimic_sorted_seq2seq.h256.txt', max_batch = 5000)
 
 # model.load_params('../models/resume_seed13_100d_lr0.001_h256.model')
 # ret = model.do_generate(data)
@@ -50,7 +50,7 @@ cnt = 0
 results = []
 input = []
 truth = []
-for line in open("mimic_seq2seq.h256.txt"):
+for line in open("mimic_sorted_seq2seq.h256.txt"):
     if cnt % 3 == 0:
         input = set(line.strip().split("S: ")[1].split(" "))
     if cnt % 3 == 1:
@@ -63,4 +63,4 @@ for line in open("mimic_seq2seq.h256.txt"):
         if len(truth) > 0:
             results.append((input, truth, result))
     cnt += 1
-dump(results, "mimic_result_seq2seq_3_80.pkl")
+dump(results, "mimic_sorted_result_seq2seq_3_80.pkl")
