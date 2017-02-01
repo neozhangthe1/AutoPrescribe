@@ -13,7 +13,7 @@ model = CoverageModel(p, config)
 
 model.load_params('build/sutter_seq2seq_sorted_seed13_100d_lr0.001_h256.model')
 # model.do_reinforce(scorer)
-model.do_eval(training = False, filename = 'mimic_unsort_seq2seq.h256.txt', max_batch = 5000)
+model.do_eval(training = False, filename = 'sutter_sorted_seq2seq.h256.txt', max_batch = 5000)
 
 # model.load_params('../models/resume_seed13_100d_lr0.001_h256.model')
 # ret = model.do_generate(data)
