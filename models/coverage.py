@@ -70,6 +70,13 @@ class CoverageModel:
                                         hidden_update=l_t.hidden_update, hid_init=l_source_last,
                                         unk_index=processor.get_char_index('UNK', False),
                                         start_index=processor.get_char_index('START', False), W_gen = l_t.W_gen, gen_len=config.target_len)
+        l_att = layers.GRUCoverageAttLayer(config.dec_units, grad_clipping=config.grad_clipping,
+                                        source_token_cnt=processor.source_vocab_size, target_token_cnt=processor.target_vocab_size,
+                                        l_enc_feat=l_source, l_enc_mask=l_source_mask_inputs,
+                                        W_emb=self.W2, resetgate=l_t.resetgate, updategate=l_t.updategate,
+                                        hidden_update=l_t.hidden_update, hid_init=l_source_last,
+                                        unk_index=processor.get_char_index('UNK', False),
+                                        start_index=processor.get_char_index('START', False), W_gen = l_t.W_gen, gen_len=config.target_len)
         self.l = l_target_outputs
 
         py = lasagne.layers.get_output(l_target_outputs)
@@ -83,6 +90,8 @@ class CoverageModel:
 
         gen_y = lasagne.layers.get_output(l_gen)
 
+        gen_att = lasagne.layers.get_output(l_att)
+
         self.train_fn = theano.function(
                 [source_inputs, target_inputs, target_outputs, source_mask_inputs, target_mask_inputs],
                 None, updates=updates, on_unused_input='ignore',
@@ -92,6 +101,7 @@ class CoverageModel:
                 loss, on_unused_input='ignore',
                 mode=NanGuardMode(nan_is_error=True, inf_is_error=True, big_is_error=True))
         self.test_fn = theano.function([source_inputs, source_mask_inputs], gen_y, on_unused_input='ignore')
+        self.att_fn = theano.function([source_inputs, source_mask_inputs], gen_att, on_unused_input='ignore')
 
         # l_samp = layers.GRUCopyPureSampleLayer(config.dec_units, grad_clipping=config.grad_clipping,
         #                                        word_cnt=processor.char_cnt, extra_word_cnt=processor.extra_char_cnt,
@@ -170,7 +180,11 @@ class CoverageModel:
         for step, (source_inputs, target_inputs, target_outputs, source_mask_inputs, target_mask_inputs,
                    refs) in enumerate(p.gen_batch(p.dev_data)):
             gen_y = self.test_fn(source_inputs, source_mask_inputs)
-            print(gen_y)
+            gen_att = self.att_fn(source_inputs, source_mask_inputs)
+            print(gen_y.shape)
+            print(type(gen_y))
+            print(gen_att.shape)
+            print(type(gen_att))
             for i in range(gen_y.shape[0]):
                 if i >= 1 and training: break
                 s = []
@@ -201,6 +215,8 @@ class CoverageModel:
         for step, (source_inputs, target_inputs, target_outputs, source_mask_inputs, target_mask_inputs, map_inputs,
                    refs) in enumerate(p.gen_batch(data, shuffle=False)):
             gen_y = self.test_fn(source_inputs, source_mask_inputs, map_inputs)
+            gen_att = self.att_fn(source_inputs, source_mask_inputs, map_inputs)
+
             for i in range(gen_y.shape[0]):
                 if i >= 1 and training: break
                 s = []
