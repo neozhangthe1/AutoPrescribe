@@ -213,7 +213,7 @@ class GRUCoverageTrainLayer(lasagne.layers.MergeLayer):
             # enc_feat: (batch, enc_len, units), hid_previous: (batch, units)
             att = T.batched_dot(enc_feat, hid_previous) # (batch, enc_len)
             att = T.nnet.softmax(att) * enc_mask # (batch, enc_len)
-            att = att / (T.sum(att, axis = 1, keepdims = True) + 1e-8) # (batch, enc_len)
+            #att = att / (T.sum(att, axis = 1, keepdims = True) + 1e-8) # (batch, enc_len)
             att = T.batched_dot(att, enc_feat) # (batch, units)
             input_n = T.concatenate([input_emb, att, att], axis = 1)
 
@@ -567,9 +567,9 @@ class GRUCoverageTestLayer(lasagne.layers.MergeLayer):
             # enc_feat: (batch, enc_len, units), hid_previous: (batch, units)
             att = T.batched_dot(enc_feat, hid_previous) # (batch, enc_len)
             att = T.nnet.softmax(att) * enc_mask # (batch, enc_len)
-            att = att / (T.sum(att, axis = 1, keepdims = True) + 1e-8) # (batch, enc_len)
-            att = T.batched_dot(att, enc_feat) # (batch, units)
-            input_n = T.concatenate([input_emb, att, att], axis = 1)
+            #att = att / (T.sum(att, axis = 1, keepdims = True) + 1e-8) # (batch, enc_len)
+            att_s = T.batched_dot(att, enc_feat) # (batch, units)
+            input_n = T.concatenate([input_emb, att_s, att_s], axis = 1)
 
 
             # Compute W_{hr} h_{t - 1}, W_{hu} h_{t - 1}, and W_{hc} h_{t - 1}
@@ -643,7 +643,7 @@ class GRUCoverageTestLayer(lasagne.layers.MergeLayer):
             # copy_probs = copy_probs / (T.sum(copy_probs, axis = 1, keepdims = True) + 1e-8) # (batch, enc_len)
             # copy_hid = T.batched_dot(copy_probs, enc_feat) # (batch, units)
 
-            return [next_input, hid]
+            return [next_input, hid, att]
 
         step_fun = step
 
@@ -667,19 +667,19 @@ class GRUCoverageTestLayer(lasagne.layers.MergeLayer):
             # Retrieve the dimensionality of the incoming layer
             input_shape = self.input_shapes[0]
             # Explicitly unroll the recurrence instead of using scan
-            [token_out, hid_out] = unroll_scan(
+            [token_out, hid_out, att] = unroll_scan(
                 fn=step_fun,
-                outputs_info=[input_init, hid_init],
+                outputs_info=[input_init, hid_init, None],
                 go_backwards=self.backwards,
                 non_sequences=non_seqs,
                 n_steps=self.gen_len)[0]
         else:
             # Scan op iterates over first dimension of input and repeatedly
             # applies the step function
-            [token_out, hid_out] = theano.scan(
+            [token_out, hid_out, att] = theano.scan(
                 fn=step_fun,
                 go_backwards=self.backwards,
-                outputs_info=[input_init, hid_init],
+                outputs_info=[input_init, hid_init, None],
                 non_sequences=non_seqs,
                 truncate_gradient=self.gradient_steps,
                 strict=True,
@@ -717,21 +717,21 @@ class GRUCoverageTestLayer(lasagne.layers.MergeLayer):
             # Retrieve the dimensionality of the incoming layer
             input_shape = self.input_shapes[0]
             # Explicitly unroll the recurrence instead of using scan
-            [hid_out, prob_out] = unroll_scan(
+            [hid_out, prob_out, att] = unroll_scan(
                 fn=step_fun,
                 sequences=sequences,
-                outputs_info=[hid_init, None],
+                outputs_info=[hid_init, None, None],
                 go_backwards=self.backwards,
                 non_sequences=non_seqs,
                 n_steps=input_shape[1])[0]
         else:
             # Scan op iterates over first dimension of input and repeatedly
             # applies the step function
-            [hid_out, prob_out] = theano.scan(
+            [hid_out, prob_out, att] = theano.scan(
                 fn=step_fun,
                 sequences=sequences,
                 go_backwards=self.backwards,
-                outputs_info=[hid_init, None],
+                outputs_info=[hid_init, None, None],
                 non_sequences=non_seqs,
                 truncate_gradient=self.gradient_steps,
                 strict=True)[0]
