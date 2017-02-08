@@ -81,7 +81,7 @@ class CoverageModel:
         params = lasagne.layers.get_all_params(self.l, trainable=True)
         updates = lasagne.updates.adam(loss, params, learning_rate=config.learning_rate)
 
-        gen_y = lasagne.layers.get_output(l_gen)
+        gen_y, att = lasagne.layers.get_output(l_gen)
 
         self.train_fn = theano.function(
                 [source_inputs, target_inputs, target_outputs, source_mask_inputs, target_mask_inputs],
