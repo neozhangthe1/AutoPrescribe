@@ -571,6 +571,7 @@ class GRUCoverageTestLayer(lasagne.layers.MergeLayer):
             att = T.batched_dot(att, enc_feat) # (batch, units)
             input_n = T.concatenate([input_emb, att, att], axis = 1)
 
+
             # Compute W_{hr} h_{t - 1}, W_{hu} h_{t - 1}, and W_{hc} h_{t - 1}
             hid_input = T.dot(hid_previous, W_hid_stacked)
 
