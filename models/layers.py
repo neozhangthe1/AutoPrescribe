@@ -748,7 +748,7 @@ class GRUCoverageTestLayer(lasagne.layers.MergeLayer):
             if self.backwards:
                 prob_out = prob_out[:, ::-1]
 
-        return prob_out
+        return prob_out, att
 
 class GRUCopyPureSampleLayer(lasagne.layers.MergeLayer):
     def __init__(self, num_units,
