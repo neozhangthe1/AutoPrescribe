@@ -89,9 +89,10 @@ def get_golden_eval(inputs, prediction, diag_to_drug, drug_to_diag):
     return precision, recall
 
 def get_average_golden_eval(input_list, prediction_list):
-    diag_to_drug, drug_to_diag = load("diag_drug_mapping.pkl")
+    diag_to_drug, drug_to_diag = load("icd_gpi_map.pkl")
     ave_precision, ave_recall = 0.0, 0.0
-    for i, item in enumerate(input_list):
+    for i, kk in enumerate(input_list):
+        item = [k.replace(".", "") for k in kk]
         precision, recall = get_golden_eval(item, prediction_list[i], diag_to_drug, drug_to_diag)
         ave_precision += precision
         ave_recall += recall
@@ -148,11 +149,13 @@ def get_average_jaccard(truth_list, prediction_list):
         cnt += 1
     print(jaccard / cnt)
 
+
 def get_accuracy(truth, prediction):
     if set(prediction) == set(truth):
         return 1.
     else:
         return 0.
+
 
 def get_average_accuracy(truth_list, prediction_list):
     acc = 0.0
@@ -161,8 +164,6 @@ def get_average_accuracy(truth_list, prediction_list):
         acc += get_accuracy(truth_list[i], item)
         cnt += 1
     print(acc / cnt)
-
-
 
 def get_macro_f1(truth_list, prediction_list):
     tp = dd(float)
@@ -188,33 +189,130 @@ def get_macro_f1(truth_list, prediction_list):
     print(np.average(list(f1.values())))
 
 
+def eval_interaction(prediction_list):
+    interaction_drugs = load("interaction_drugs.pkl")
+    neg_count = 0
+    total_count = 0
+    for pd in prediction_list:
+        prediction = list(pd)
+        flag = False
+        total_count += len(prediction) * (len(prediction) - 1)
+        for i1 in range(len(prediction)):
+            for i2 in range(i1+1, len(prediction)):
+                if (prediction[i1], prediction[i2]) in interaction_drugs:
+                    print((prediction[i1], prediction[i2]), neg_count)
+                    neg_count += 1
+                    # flag = True
+                    # break
+            # if flag:
+            #     break
+        # if flag:
+        #     neg_count += 1
+        print(neg_count, len(prediction_list), total_count)
+        print(0 if total_count == 0 else float(neg_count) / total_count)
 
-def eval_emb():
-    evaluator = Evaluator()
-    emb = Embedding()
-    emb.load()
-    evaluator.eval(emb)
+
+def merge():
+    gt = dd(set)
+    result_names = ["sutter_sorted_result_seq2seq.pkl", "sutter_result_seq2seq_1.30.pkl", "sutter_result_mlp_0.15.pkl", "sutter_result_freq.pkl"]
+    # result_names = ["mimic_ontology_seq2seq.pkl", "mimic_result_freq.pkl", "mimic_result_mlp_0.012.pkl", "mimic_result_seq2seq_3_80.pkl", "mimic_sorted_result_seq2seq_3_80.pkl", "mimic_unsort_result_seq2seq.pkl"]
+    results = [load(r) for r in result_names]
+
+    merged_results = [dd(list) for _ in range(len(results))]
+    for item in results[0]:
+        item_0 = [x.replace(".", "") for x in item[0]]
+        gt[tuple(sorted(item_0))].add(tuple(sorted(item[1])))
+    sorted_gt = sorted(gt.items(), key=lambda x: len(x[1]), reverse=True)
+    for i, result in enumerate(results):
+        for item in result:
+            item_0 = [x.replace(".", "") for x in item[0]]
+            merged_results[i][tuple(sorted(item_0))].append(item[2])
+    final_results = {}
+    for r in sorted_gt:
+        final_results[r[0]] = [list(set(r[1]))]
+        for result in merged_results:
+            final_results[r[0]].append(result[r[0]][:1])
+
+    inputs = "E66.9,311,477.8,493.9".split(",")
+    def get_results(inputs):
+        inputs = tuple(sorted([x.replace(".", "") for x in inputs]))
+        print(final_results[inputs])
+
+    drug_name = load("drug_name.pkl")
+    diag_name = load("diag_name.pkl")
+
+    with open("gt_sutter.txt", "w") as f_out:
+        for item in results[0]:
+            f_out.write("\t".join([diag_name[x] + " " + x for x in item[0]]) + "\n")
+            f_out.write("\t".join(sorted(drug_name[x] + " " + x for x in item[1])) + "\n")
+            f_out.write("\n")
+
+    encounters = load("sutter_encounter_clean.train.pkl")
+
+    with open("gt_sutter.txt", "w") as f_out:
+        for item in encounters[:10000]:
+            f_out.write(",".join([x + " " + diag_name[x].replace(",", " ") for x in item[0]]) + "\n")
+            f_out.write(",".join(sorted(x + " " + drug_name[x].replace(",", " ") for x in item[1])) + "\n")
+            f_out.write("\n")
+
+    with open("gt_sutter.txt", "w") as f_out:
+        for item in encounters[:10000]:
+            for i, x in enumerate(item[0]):
+                if i == 0:
+                    f_out.write("Diagnosis:,")
+                else:
+                    f_out.write(",")
+                f_out.write(x + "," + diag_name[x].replace(",", " ") + "\n")
+            for i, x in enumerate(item[1]):
+                if i == 0:
+                    f_out.write("Drug:,")
+                else:
+                    f_out.write(",")
+                f_out.write(x + "," + drug_name[x].replace(",", " ") + "\n")
+            f_out.write("\n")
 
 
-def eval_golden():
-    evaluator = Evaluator()
-    golden = GoldenRule()
-    evaluator.eval(golden)
-    evaluator.eval_golden(golden)
+    with open("sutter_results.csv", "w") as f_out:
+        for k, r in enumerate(final_results):
+            for i, x in enumerate(r):
+                if i == 0:
+                    f_out.write("Diagnosis_%s:," % k)
+                else:
+                    f_out.write(",")
+                f_out.write(x + "," + diag_name[x].replace(",", " ") + "\n")
+            prescriptions = set()
+            for j, item in enumerate(final_results[r]):
+                if len(item) > 0:
+                    prescriptions.add(tuple(sorted(item[0])))
+            for j, item in enumerate(prescriptions):
+                for i, x in enumerate(item):
+                    if i == 0:
+                        f_out.write("Drug_%s:," % j)
+                    else:
+                        f_out.write(",")
+                    f_out.write(x + "," + drug_name[x].replace(",", " ") + "\n")
+            f_out.write("\n")
 
-
-def eval_real():
-    test_set = load("mimic_episodes_index_test.pkl")
-    evaluator = Evaluator()
-    precisions, recalls = [], []
-    cnt = 0
-    for pair in test_set:
-        precision, recall = evaluator.get_golden_eval(pair[0], pair[1])
-        precisions.append(precision)
-        recalls.append(recall)
-        if cnt % 1000 == 0:
-            print(cnt, precision, recall)
-            print(np.mean(precisions), np.mean(recalls))
-        cnt += 1
+    with open("mimic_results_all.csv", "w") as f_out:
+        for k, r in enumerate(final_results):
+            for i, x in enumerate(r):
+                if i == 0:
+                    f_out.write("Diagnosis_%s:," % k)
+                else:
+                    f_out.write(",")
+                if x in diag_name:
+                    f_out.write(x + "," + diag_name[x].replace(",", " ") + "\n")
+            prescriptions = []
+            for j, item in enumerate(final_results[r]):
+                if len(item) > 0:
+                    prescriptions.append(tuple(sorted(item[0])))
+            for j, item in enumerate(prescriptions):
+                for i, x in enumerate(item):
+                    if i == 0:
+                        f_out.write("Drug_%s:," % j)
+                    else:
+                        f_out.write(",")
+                    f_out.write(x + "," + drug_name[x].replace(",", " ") + "\n")
+            f_out.write("\n")
 
 

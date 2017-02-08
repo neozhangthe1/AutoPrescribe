@@ -750,7 +750,7 @@ class GRUCoverageTestLayer(lasagne.layers.MergeLayer):
 
         print("att", att)
 
-        return prob_out, att
+        return att
 
 class GRUCopyPureSampleLayer(lasagne.layers.MergeLayer):
     def __init__(self, num_units,

@@ -164,3 +164,17 @@ def convert_ground_truth():
     dump(dict(ndc_to_icd), "ndc_to_icd_index.pkl")
 
 
+def get_icd_to_gpi_map():
+    icd_to_ndc = load("icd_to_ndc.pkl")
+    ndc_to_gpi = load("ndc_to_gpi_6.pkl")
+    icd_to_gpi = dd(set)
+    for icd in icd_to_ndc:
+        for ndc in icd_to_ndc[icd]:
+            if ndc in ndc_to_gpi:
+                icd_to_gpi[icd].add(ndc_to_gpi[ndc])
+    gpi_to_icd = dd(set)
+    for icd in icd_to_gpi:
+        for gpi in icd_to_gpi[icd]:
+            gpi_to_icd[gpi].add(icd)
+
+    dump((dict(icd_to_gpi), dict(gpi_to_icd)), "icd_gpi_map.pkl")
