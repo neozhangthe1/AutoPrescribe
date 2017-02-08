@@ -108,8 +108,8 @@ class CoverageModel:
                                                l_enc_feat=l_source, l_enc_mask=l_source_mask_inputs,
                                                W_emb=self.W2, resetgate=l_t.resetgate, updategate=l_t.updategate,
                                                hidden_update=l_t.hidden_update, hid_init=l_source_last,
-                                               unk_index=processor.get_char_index('UNK'),
-                                               start_index=processor.get_char_index('START'), gen_len=config.target_len,
+                                               unk_index=processor.get_char_index('UNK', False),
+                                               start_index=processor.get_char_index('START', False), gen_len=config.target_len,
                                                MRG_stream=self.MRG_stream)  # (batch, dec_len)
         samp_y = lasagne.layers.get_output(l_samp)
         self.sample_fn = theano.function([source_inputs, source_mask_inputs], samp_y,
