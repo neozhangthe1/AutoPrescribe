@@ -103,27 +103,27 @@ class CoverageModel:
         self.test_fn = theano.function([source_inputs, source_mask_inputs], gen_y, on_unused_input='ignore')
         self.att_fn = theano.function([source_inputs, source_mask_inputs], gen_att, on_unused_input='ignore')
 
-        # l_samp = layers.GRUCopyPureSampleLayer(config.dec_units, grad_clipping=config.grad_clipping,
-        #                                        word_cnt=processor.char_cnt, extra_word_cnt=processor.extra_char_cnt,
-        #                                        l_enc_feat=l_source, l_enc_mask=l_source_mask_inputs,
-        #                                        W_emb=self.W2, resetgate=l_t.resetgate, updategate=l_t.updategate,
-        #                                        hidden_update=l_t.hidden_update, hid_init=l_source_last,
-        #                                        unk_index=processor.get_char_index('UNK'),
-        #                                        start_index=processor.get_char_index('START'), gen_len=config.target_len,
-        #                                        MRG_stream=self.MRG_stream)  # (batch, dec_len)
-        # samp_y = lasagne.layers.get_output(l_samp)
-        # self.sample_fn = theano.function([source_inputs, source_mask_inputs, map_inputs], samp_y,
-        #                                  updates=l_samp.updates, on_unused_input='ignore')
+        l_samp = layers.GRUCopyPureSampleLayer(config.dec_units, grad_clipping=config.grad_clipping,
+                                               word_cnt=processor.char_cnt, extra_word_cnt=processor.extra_char_cnt,
+                                               l_enc_feat=l_source, l_enc_mask=l_source_mask_inputs,
+                                               W_emb=self.W2, resetgate=l_t.resetgate, updategate=l_t.updategate,
+                                               hidden_update=l_t.hidden_update, hid_init=l_source_last,
+                                               unk_index=processor.get_char_index('UNK'),
+                                               start_index=processor.get_char_index('START'), gen_len=config.target_len,
+                                               MRG_stream=self.MRG_stream)  # (batch, dec_len)
+        samp_y = lasagne.layers.get_output(l_samp)
+        self.sample_fn = theano.function([source_inputs, source_mask_inputs], samp_y,
+                                         updates=l_samp.updates, on_unused_input='ignore')
 
-        # reward_inputs = T.matrix()  # (batch, dec_len)
-        # reinforce_loss = (
-        # py * T.extra_ops.to_one_hot(target_outputs.flatten(), processor.char_cnt + processor.extra_char_cnt)).sum(
-        #     axis=1)  # (batch * dec_len)
-        # reinforce_loss = - (reinforce_loss * target_mask_inputs.flatten() * reward_inputs.flatten()).mean()
-        # reinforce_updates = lasagne.updates.adam(reinforce_loss, params, learning_rate=config.reinforce_learning_rate)
-        # self.reinforce_fn = theano.function(
-        #         [source_inputs, target_inputs, target_outputs, source_mask_inputs, target_mask_inputs, map_inputs,
-        #          reward_inputs], None, updates=reinforce_updates, on_unused_input='ignore')
+        reward_inputs = T.matrix()  # (batch, dec_len)
+        reinforce_loss = (
+        py * T.extra_ops.to_one_hot(target_outputs.flatten(), processor.char_cnt + processor.extra_char_cnt)).sum(
+            axis=1)  # (batch * dec_len)
+        reinforce_loss = - (reinforce_loss * target_mask_inputs.flatten() * reward_inputs.flatten()).mean()
+        reinforce_updates = lasagne.updates.adam(reinforce_loss, params, learning_rate=config.reinforce_learning_rate)
+        self.reinforce_fn = theano.function(
+                [source_inputs, target_inputs, target_outputs, source_mask_inputs, target_mask_inputs,
+                 reward_inputs], None, updates=reinforce_updates, on_unused_input='ignore')
 
         print('params', lasagne.layers.count_params(self.l, trainable=True))
 
@@ -145,13 +145,13 @@ class CoverageModel:
     def comp_reinforce_loss(self, data, scorer):
         p, config = self.processor, self.config
         rewards, cnt = 0, 0
-        for step, (source_inputs, target_inputs, target_outputs, source_mask_inputs, target_mask_inputs, map_inputs,
+        for step, (source_inputs, target_inputs, target_outputs, source_mask_inputs, target_mask_inputs,
                    refs) in enumerate(p.gen_batch(data, shuffle=False)):
 
-            samp_y = self.test_fn(source_inputs, source_mask_inputs, map_inputs)
+            samp_y = self.test_fn(source_inputs, source_mask_inputs)
             for j in range(len(refs)):
                 refs[j].target_text = p.decode(samp_y[j], refs[j])
-            source_inputs, target_inputs, target_outputs, source_mask_inputs, target_mask_inputs, map_inputs = p.gen_one_batch(
+            source_inputs, target_inputs, target_outputs, source_mask_inputs, target_mask_inputs = p.gen_one_batch(
                 refs)
 
             instances = [[ref.target_text, ref.source_text] for ref in refs]

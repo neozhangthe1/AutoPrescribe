@@ -131,7 +131,7 @@ class Processor:
         target_outputs = np.zeros((batch_size, config.target_len), dtype=np.int32)
         source_mask_inputs = np.zeros((batch_size, config.source_len), dtype=np.float32)
         target_mask_inputs = np.zeros((batch_size, config.target_len), dtype=np.float32)
-        map_inputs = np.zeros((batch_size, config.source_len, self.char_cnt + self.extra_char_cnt), dtype=np.float32)
+        # map_inputs = np.zeros((batch_size, config.source_len, self.char_cnt + self.extra_char_cnt), dtype=np.float32)
 
         UNK_INDEX = self.get_char_index('UNK')
         for i, ref in enumerate(refs):
@@ -153,27 +153,27 @@ class Processor:
                 source_inputs[i, j] = self.get_char_index(source_text[j])
             source_mask_inputs[i, : min(len(source_text), config.source_len)] = 1.0
 
-            extra2index, extra_cnt, extras = {}, 0, []
-            for j in range(len(source_text)):
-                if j >= config.source_len: break
-                char_index = self.get_char_index(source_text[j])
-                char = source_text[j]
-                if char_index == UNK_INDEX:
-                    if char not in extra2index:
-                        extra2index[char] = extra_cnt
-                        extra_cnt += 1
-                        extras.append(char)
-                    extra_index = extra2index[char]
-                    map_inputs[i, j, self.char_cnt + extra_index] = 1.0
-                else:
-                    map_inputs[i, j, char_index] = 1.0
-            for j in range(max_target_len - 1):
-                if target_outputs[i, j] == UNK_INDEX and j < len(target_text):
-                    char = target_text[j]
-                    if char in extra2index:
-                        target_outputs[i, j] = self.char_cnt + extra2index[char]
+            # extra2index, extra_cnt, extras = {}, 0, []
+            # for j in range(len(source_text)):
+            #     if j >= config.source_len: break
+            #     char_index = self.get_char_index(source_text[j])
+            #     char = source_text[j]
+            #     if char_index == UNK_INDEX:
+            #         if char not in extra2index:
+            #             extra2index[char] = extra_cnt
+            #             extra_cnt += 1
+            #             extras.append(char)
+            #         extra_index = extra2index[char]
+            #         map_inputs[i, j, self.char_cnt + extra_index] = 1.0
+            #     else:
+            #         map_inputs[i, j, char_index] = 1.0
+            # for j in range(max_target_len - 1):
+            #     if target_outputs[i, j] == UNK_INDEX and j < len(target_text):
+            #         char = target_text[j]
+            #         if char in extra2index:
+            #             target_outputs[i, j] = self.char_cnt + extra2index[char]
 
-        return source_inputs, target_inputs, target_outputs, source_mask_inputs, target_mask_inputs, map_inputs
+        return source_inputs, target_inputs, target_outputs, source_mask_inputs, target_mask_inputs
 
     def build_index(self):
         self.target_vocab["START"] = max(self.target_vocab.values()) + 1
