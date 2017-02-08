@@ -919,9 +919,10 @@ class GRUCoverageAttLayer(lasagne.layers.MergeLayer):
 
             # enc_feat: (batch, enc_len, units), hid_previous: (batch, units)
             att = T.batched_dot(enc_feat, hid_previous) # (batch, enc_len)
-            att = T.nnet.softmax(att) * enc_mask # (batch, enc_len)
+            att = T.nnet.softmax(att) # (batch, enc_len)
+            att_s = att * enc_mask
             #att = att / (T.sum(att, axis = 1, keepdims = True) + 1e-8) # (batch, enc_len)
-            att_s = T.batched_dot(att, enc_feat) # (batch, units)
+            att_s = T.batched_dot(att_s, enc_feat) # (batch, units)
             input_n = T.concatenate([input_emb, att_s, att_s], axis = 1)
 
 
