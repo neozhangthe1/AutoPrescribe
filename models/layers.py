@@ -1004,7 +1004,7 @@ class GRUCoverageAttLayer(lasagne.layers.MergeLayer):
             # Dot against a 1s vector to repeat to shape (num_batch, num_units)
             hid_init = T.dot(T.ones((num_batch, 1)), self.hid_init)
 
-        copy_hid_init = T.zeros((num_batch, self.num_units))
+        # copy_hid_init = T.zeros((num_batch, self.num_units))
         input_init = T.cast(T.zeros((num_batch, )).fill(self.start_index), 'int32')
 
         # The hidden-to-hidden weight matrix is always used in step
