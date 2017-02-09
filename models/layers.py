@@ -1343,8 +1343,8 @@ class GRUCopyPureSampleLayer(lasagne.layers.MergeLayer):
 
             prob = gen_log_probs #T.exp(combined_probs)
 
-            next_input = T.cast(T.argmax(self.MRG_stream.multinomial(pvals = prob), axis = 1), 'int32')
-
+            # next_input = T.cast(T.argmax(self.MRG_stream.multinomial(pvals = prob), axis = 1), 'int32')
+            next_input = T.cast(T.argmax(prob, axis = 1), 'int32')
             # output_n = T.extra_ops.to_one_hot(next_input, self.word_cnt + self.extra_word_cnt) # (batch, vocab + extra)
             # output_n = T.batched_dot(output_n, map.dimshuffle(0, 2, 1)) # (batch, enc_len)
             # copy_probs = copy_score_no_map * output_n
@@ -1393,4 +1393,4 @@ class GRUCopyPureSampleLayer(lasagne.layers.MergeLayer):
                 strict=True,
                 n_steps=self.gen_len) # [0]
 
-        return prob #token_out.dimshuffle(1, 0)
+        return token_out.dimshuffle(1, 0)
