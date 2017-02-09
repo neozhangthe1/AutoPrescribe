@@ -36,7 +36,7 @@ class scorer(object):
             rewards.append(score_j)
 
 
-model.load_params('build/mimic_seq2seq__seed13_100d_lr0.001_h256.model_1.31')
+model.load_params('build/mimic_seq2seq_seed13_100d_lr0.001_h256.model_28_75')
 model.do_reinforce(scorer)
 # model.do_eval(training = False, filename = 'mimic_seq2seq.h256.txt', max_batch = 5000)
 
