@@ -138,14 +138,14 @@ class Processor:
             target_text, source_text = ref.target_text, ref.source_text
 
             max_target_len = min(len(target_text) + 1, config.target_len)
-            target_inputs[i, 0] = self.get_char_index('START')
+            target_inputs[i, 0] = self.get_char_index('START', False)
             if max_target_len == len(target_text) + 1:
-                target_outputs[i, max_target_len - 1] = self.get_char_index('END')
+                target_outputs[i, max_target_len - 1] = self.get_char_index('END', False)
             else:
-                target_outputs[i, max_target_len - 1] = self.get_char_index(target_text[max_target_len - 1])
+                target_outputs[i, max_target_len - 1] = self.get_char_index(target_text[max_target_len - 1], False)
             for j in range(max_target_len - 1):
-                target_inputs[i, j + 1] = self.get_char_index(target_text[j])
-                target_outputs[i, j] = self.get_char_index(target_text[j])
+                target_inputs[i, j + 1] = self.get_char_index(target_text[j], False)
+                target_outputs[i, j] = self.get_char_index(target_text[j], False)
             target_mask_inputs[i, : max_target_len] = 1.0
 
             for j in range(len(source_text)):
@@ -176,6 +176,9 @@ class Processor:
         return source_inputs, target_inputs, target_outputs, source_mask_inputs, target_mask_inputs
 
     def build_index(self):
+        self.source_vocab["START"] = max(self.target_vocab.values()) + 1
+        self.source_vocab["END"] = max(self.target_vocab.values()) + 1
+        self.source_vocab["UNK"] = max(self.target_vocab.values()) + 1
         self.target_vocab["START"] = max(self.target_vocab.values()) + 1
         self.target_vocab["END"] = max(self.target_vocab.values()) + 1
         self.target_vocab["UNK"] = max(self.target_vocab.values()) + 1
