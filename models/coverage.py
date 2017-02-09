@@ -271,6 +271,7 @@ class CoverageModel:
                 instances = [[ref.target_text, ref.source_text] for ref in refs]
                 rewards = np.array(scorer.predict(instances), dtype=np.float32)
                 rewards = np.tile(rewards, (config.target_len, 1)).transpose()  # (batch, dec_len)
+                print(rewards)
 
                 self.reinforce_fn(source_inputs, target_inputs, target_outputs, source_mask_inputs, target_mask_inputs, rewards)
 
