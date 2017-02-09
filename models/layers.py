@@ -1339,7 +1339,7 @@ class GRUCopyPureSampleLayer(lasagne.layers.MergeLayer):
             # combined_probs = T.zeros_like(copy_log_probs)
             # combined_probs = T.set_subtensor(combined_probs[:, : self.word_cnt], vocab_log_probs)
             # combined_probs = T.set_subtensor(combined_probs[:, self.word_cnt :], extra_log_probs)
-            # # prob = combined_probs
+            # prob = combined_probs
 
             prob = gen_log_probs #T.exp(combined_probs)
 

@@ -262,8 +262,8 @@ class CoverageModel:
         for epoch in range(self.config.max_epoch):
             for step, (source_inputs, target_inputs, target_outputs, source_mask_inputs, target_mask_inputs,
                        refs) in enumerate(p.gen_batch(p.train_data)):
-                samp_y = self.sample_fn(source_inputs, source_mask_inputs)
-                print("samp_y", samp_y)
+                # samp_y = self.sample_fn(source_inputs, source_mask_inputs)
+                # print("samp_y", samp_y)
                 gen_y = self.test_fn(source_inputs, source_mask_inputs)
                 print("gen_y", gen_y)
                 predictions = []
@@ -273,12 +273,12 @@ class CoverageModel:
                         print(predictions)
                 source_inputs, target_inputs, target_outputs, source_mask_inputs, target_mask_inputs = p.gen_one_batch(
                     refs)
-                # print(len(refs))
-                # print(refs[0].target_text)
+                print(len(refs))
+                print(refs[0].target_text)
                 instances = [[ref.target_text, ref.source_text] for ref in refs]
                 rewards = np.array(scorer.predict(instances), dtype=np.float32)
                 rewards = np.tile(rewards, (config.target_len, 1)).transpose()  # (batch, dec_len)
-                # print(rewards)
+                print(rewards)
 
                 self.reinforce_fn(source_inputs, target_inputs, target_outputs, source_mask_inputs, target_mask_inputs, rewards)
 
