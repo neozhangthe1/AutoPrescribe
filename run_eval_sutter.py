@@ -1,6 +1,6 @@
 from models.processor import Processor
 from models.coverage import CoverageModel
-from exp.coverage import config_mimic as config
+from exp.coverage import config_sutter as config
 from utils.data import dump
 
 config = config.get_config()
