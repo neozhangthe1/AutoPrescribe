@@ -150,14 +150,16 @@ class CoverageModel:
         rewards, cnt = 0, 0
         for step, (source_inputs, target_inputs, target_outputs, source_mask_inputs, target_mask_inputs,
                    refs) in enumerate(p.gen_batch(data, shuffle=False)):
-
+            predictions = []
             samp_y = self.test_fn(source_inputs, source_mask_inputs)
             for j in range(len(refs)):
-                refs[j].target_text = p.decode(samp_y[j], refs[j])
+                # refs[j].target_text = p.decode(samp_y[j], refs[j])
+                predictions.append(p.decode(samp_y[j], refs[j]))
             source_inputs, target_inputs, target_outputs, source_mask_inputs, target_mask_inputs = p.gen_one_batch(
                 refs)
 
-            instances = [[ref.target_text, ref.source_text] for ref in refs]
+            # instances = [[ref.target_text, ref.source_text] for ref in refs]
+            instances = [[ref.target_text, predictions[i]] for i, ref in enumerate(refs)]
             rewards += np.array(scorer.predict(instances), dtype=np.float32).mean()
             cnt += 1
 
