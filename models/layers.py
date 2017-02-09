@@ -1393,4 +1393,4 @@ class GRUCopyPureSampleLayer(lasagne.layers.MergeLayer):
                 strict=True,
                 n_steps=self.gen_len) # [0]
 
-        return token_out.dimshuffle(1, 0)
+        return prob #token_out.dimshuffle(1, 0)
