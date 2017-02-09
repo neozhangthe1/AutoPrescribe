@@ -110,6 +110,7 @@ class CoverageModel:
                                                hidden_update=l_t.hidden_update, hid_init=l_source_last,
                                                unk_index=processor.get_char_index('UNK', False),
                                                start_index=processor.get_char_index('START', False), gen_len=config.target_len,
+                                               W_gen=l_t.W_gen,
                                                MRG_stream=self.MRG_stream)  # (batch, dec_len)
         samp_y = lasagne.layers.get_output(l_samp)
         self.sample_fn = theano.function([source_inputs, source_mask_inputs], samp_y,
@@ -267,12 +268,12 @@ class CoverageModel:
                         print(predictions)
                 source_inputs, target_inputs, target_outputs, source_mask_inputs, target_mask_inputs = p.gen_one_batch(
                     refs)
-                print(len(refs))
-                print(refs[0].target_text)
+                # print(len(refs))
+                # print(refs[0].target_text)
                 instances = [[ref.target_text, ref.source_text] for ref in refs]
                 rewards = np.array(scorer.predict(instances), dtype=np.float32)
                 rewards = np.tile(rewards, (config.target_len, 1)).transpose()  # (batch, dec_len)
-                print(rewards)
+                # print(rewards)
 
                 self.reinforce_fn(source_inputs, target_inputs, target_outputs, source_mask_inputs, target_mask_inputs, rewards)
 
