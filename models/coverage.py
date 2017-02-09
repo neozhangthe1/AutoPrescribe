@@ -122,7 +122,7 @@ class CoverageModel:
         reinforce_loss = (
         py * T.extra_ops.to_one_hot(target_outputs.flatten(), processor.target_vocab_size)).sum(
             axis=1)  # (batch * dec_len)
-        reinforce_loss = - (reinforce_loss * target_mask_inputs.flatten() * reward_inputs.flatten()).mean()
+        reinforce_loss = (reinforce_loss * target_mask_inputs.flatten() * reward_inputs.flatten()).mean()
         reinforce_updates = lasagne.updates.adam(reinforce_loss, params, learning_rate=config.reinforce_learning_rate)
         self.reinforce_fn = theano.function(
                 [source_inputs, target_inputs, target_outputs, source_mask_inputs, target_mask_inputs,

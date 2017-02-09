@@ -7,7 +7,7 @@ class config:
     target_vocab_pkl = 'data/mimic_drug_vocab.pkl'
     model_seed = 13
     vocab_size = 4000
-    batch_size = 512
+    batch_size = 256
     source_len = 50
     target_len = 50
     embedding_size = 100
