@@ -1122,9 +1122,9 @@ class GRUCopyPureSampleLayer(lasagne.layers.MergeLayer):
                  only_return_final=False,
                  l_enc_feat=None,
                  l_enc_mask=None,
-                 l_map=None,
-                 word_cnt=None,
-                 extra_word_cnt=None,
+                 # l_map=None,
+                 source_token_cnt=None,
+                 target_token_cnt=None,
                  W_emb=None,
                  W_gen=lasagne.init.GlorotUniform(),
                  # W_copy=lasagne.init.GlorotUniform(),
@@ -1149,8 +1149,8 @@ class GRUCopyPureSampleLayer(lasagne.layers.MergeLayer):
         self.enc_feat_index = len(incomings) - 1
         incomings.append(l_enc_mask)
         self.enc_mask_index = len(incomings) - 1
-        incomings.append(l_map)
-        self.map_index = len(incomings) - 1
+        # incomings.append(l_map)
+        # self.map_index = len(incomings) - 1
 
         self.MRG_stream = MRG_stream
 
@@ -1165,8 +1165,8 @@ class GRUCopyPureSampleLayer(lasagne.layers.MergeLayer):
         self.unroll_scan = unroll_scan
         self.precompute_input = precompute_input
         self.only_return_final = only_return_final
-        self.word_cnt = word_cnt
-        self.extra_word_cnt = extra_word_cnt
+        self.source_token_cnt = source_token_cnt
+        self.target_token_cnt = target_token_cnt
         self.W_emb = W_emb
         self.unk_index = unk_index
         self.start_index = start_index
@@ -1215,7 +1215,7 @@ class GRUCopyPureSampleLayer(lasagne.layers.MergeLayer):
                 hid_init, (1, self.num_units), name="hid_init",
                 trainable=learn_init, regularizable=False)
 
-        self.W_gen = self.add_param(W_gen, (self.num_units, self.word_cnt), name = "W_gen")
+        self.W_gen = self.add_param(W_gen, (self.num_units, self.target_token_cnt), name = "W_gen")
         # self.W_copy = self.add_param(W_copy, (self.num_units, self.num_units), name = "W_copy")
         # self.W_mode = self.add_param(W_mode, (self.num_units, ), name = "W_mode")
 
@@ -1233,7 +1233,7 @@ class GRUCopyPureSampleLayer(lasagne.layers.MergeLayer):
 
         enc_feat = inputs[self.enc_feat_index]
         enc_mask = inputs[self.enc_mask_index]
-        map = inputs[self.map_index] # (batch, enc_len, vocab + extra)
+        # map = inputs[self.map_index] # (batch, enc_len, vocab + extra)
 
         num_batch = enc_feat.shape[0]
 
@@ -1258,7 +1258,7 @@ class GRUCopyPureSampleLayer(lasagne.layers.MergeLayer):
         def slice_w(x, n):
             return x[:, n*self.num_units:(n+1)*self.num_units]
 
-        W_emb_comp = T.dot(T.ones((self.extra_word_cnt, 1)), self.W_emb[self.unk_index].dimshuffle('x', 0)) # (extra, emb)
+        W_emb_comp = T.dot(T.ones((self.target_token_cnt, 1)), self.W_emb[self.unk_index].dimshuffle('x', 0)) # (extra, emb)
         W_emb = T.concatenate([self.W_emb, W_emb_comp], axis = 0)
 
         # Create single recurrent computation step function

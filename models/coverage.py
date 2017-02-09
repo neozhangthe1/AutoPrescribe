@@ -104,7 +104,7 @@ class CoverageModel:
         self.att_fn = theano.function([source_inputs, source_mask_inputs], gen_att, on_unused_input='ignore')
 
         l_samp = layers.GRUCopyPureSampleLayer(config.dec_units, grad_clipping=config.grad_clipping,
-                                               word_cnt=processor.char_cnt, extra_word_cnt=processor.extra_char_cnt,
+                                               source_token_cnt=processor.source_vocab_size, target_token_cnt=processor.target_vocab_size,
                                                l_enc_feat=l_source, l_enc_mask=l_source_mask_inputs,
                                                W_emb=self.W2, resetgate=l_t.resetgate, updategate=l_t.updategate,
                                                hidden_update=l_t.hidden_update, hid_init=l_source_last,
