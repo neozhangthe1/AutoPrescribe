@@ -6,12 +6,12 @@
 
 from models.processor import Processor
 from models.coverage import CoverageModel
-from exp.coverage import config_mimic as config
+from exp.coverage import config_sutter as config
 from utils.data import dump
 
 config = config.get_config()
 dir = 'build/'
-config.saved_model_file = dir + 'rf_mimic_new_sorted_seq2seq.model'
+config.saved_model_file = dir + 'rf_sutter_new_sorted_seq2seq.model'
 
 
 print(config.saved_model_file.split('/')[-1])
@@ -41,7 +41,7 @@ class Scorer(object):
         return rewards
 
 
-model.load_params('build/mimic_sort_seq2seq_len_50_seed13_100d_lr0.001_h256.model')
+model.load_params('build/sutter_seq2seq_sorted_seed13_100d_lr0.001_h256.model')
 model.do_reinforce(Scorer())
 # model.do_eval(training = False, filename = 'mimic_seq2seq.h256.txt', max_batch = 5000)
 
