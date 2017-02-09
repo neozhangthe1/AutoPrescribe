@@ -265,7 +265,7 @@ class CoverageModel:
                 # samp_y = self.sample_fn(source_inputs, source_mask_inputs)
                 # print("samp_y", samp_y)
                 gen_y = self.test_fn(source_inputs, source_mask_inputs)
-                print("gen_y", gen_y)
+                # print("gen_y", gen_y)
                 predictions = []
                 for j in range(len(refs)):
                     predictions.append(p.decode(gen_y[j], refs[j]))
@@ -273,12 +273,12 @@ class CoverageModel:
                     #     print(predictions)
                 source_inputs, target_inputs, target_outputs, source_mask_inputs, target_mask_inputs = p.gen_one_batch(
                     refs)
-                print(predictions[0])
-                print(refs[0].target_text)
+                # print(predictions[0])
+                # print(refs[0].target_text)
                 instances = [[ref.target_text, predictions[i]] for i, ref in enumerate(refs)]
                 rewards = np.array(scorer.predict(instances), dtype=np.float32)
                 rewards = np.tile(rewards, (config.target_len, 1)).transpose()  # (batch, dec_len)
-                print(rewards)
+                # print(rewards)
 
                 self.reinforce_fn(source_inputs, target_inputs, target_outputs, source_mask_inputs, target_mask_inputs, rewards)
 
