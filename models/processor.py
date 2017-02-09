@@ -133,7 +133,7 @@ class Processor:
         target_mask_inputs = np.zeros((batch_size, config.target_len), dtype=np.float32)
         # map_inputs = np.zeros((batch_size, config.source_len, self.char_cnt + self.extra_char_cnt), dtype=np.float32)
 
-        UNK_INDEX = self.get_char_index('UNK')
+        # UNK_INDEX = self.get_char_index('UNK')
         for i, ref in enumerate(refs):
             target_text, source_text = ref.target_text, ref.source_text
 
