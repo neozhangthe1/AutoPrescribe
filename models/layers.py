@@ -213,7 +213,7 @@ class GRUCoverageTrainLayer(lasagne.layers.MergeLayer):
             # enc_feat: (batch, enc_len, units), hid_previous: (batch, units)
             att = T.batched_dot(enc_feat, hid_previous) # (batch, enc_len)
             att = T.nnet.softmax(att) * enc_mask # (batch, enc_len)
-            #att = att / (T.sum(att, axis = 1, keepdims = True) + 1e-8) # (batch, enc_len)
+            att = att / (T.sum(att, axis = 1, keepdims = True) + 1e-8) # (batch, enc_len)
             att = T.batched_dot(att, enc_feat) # (batch, units)
             input_n = T.concatenate([input_emb, att, att], axis = 1)
 
@@ -283,7 +283,7 @@ class GRUCoverageTrainLayer(lasagne.layers.MergeLayer):
             # combined_probs = T.set_subtensor(combined_probs[:, : self.word_cnt], vocab_log_probs)
             # combined_probs = T.set_subtensor(combined_probs[:, self.word_cnt :], extra_log_probs)
             prob = gen_log_probs #combined_probs
-            print("prob", prob)
+            # print("prob", prob)
             return [hid, prob] #[hid, copy_hid, prob]
 
         def step_masked(input_n, output_n, mask_n, hid_previous, *args):

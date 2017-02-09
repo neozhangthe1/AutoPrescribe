@@ -104,12 +104,14 @@ class CoverageModel:
         self.att_fn = theano.function([source_inputs, source_mask_inputs], gen_att, on_unused_input='ignore')
 
         l_samp = layers.GRUCopyPureSampleLayer(config.dec_units, grad_clipping=config.grad_clipping,
-                                               source_token_cnt=processor.source_vocab_size, target_token_cnt=processor.target_vocab_size,
+                                               source_token_cnt=processor.source_vocab_size,
+                                               target_token_cnt=processor.target_vocab_size,
                                                l_enc_feat=l_source, l_enc_mask=l_source_mask_inputs,
                                                W_emb=self.W2, resetgate=l_t.resetgate, updategate=l_t.updategate,
                                                hidden_update=l_t.hidden_update, hid_init=l_source_last,
                                                unk_index=processor.get_char_index('UNK', False),
-                                               start_index=processor.get_char_index('START', False), gen_len=config.target_len,
+                                               start_index=processor.get_char_index('START', False),
+                                               gen_len=config.target_len,
                                                W_gen=l_t.W_gen,
                                                MRG_stream=self.MRG_stream)  # (batch, dec_len)
         samp_y = lasagne.layers.get_output(l_samp)
