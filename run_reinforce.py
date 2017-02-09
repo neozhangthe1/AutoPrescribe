@@ -26,14 +26,16 @@ class Scorer(object):
         s1 = set(s1)
         intersection = len(s0.intersection(s1))
         union = len(s0.union(s1))
-        return 0.0 if union == 0 else float(intersection) / union
-
+        score = 0.0 if union == 0 else float(intersection) / union
+        print(score)
+        return score
 
     def predict(self, instances):
         rewards = []
         for i, instance in enumerate(instances):
             score_j = self.jaccard(instance[0], instance[1])
             rewards.append(score_j)
+        return rewards
 
 
 model.load_params('build/mimic_seq2seq_seed13_100d_lr0.001_h256.model_28_75')
