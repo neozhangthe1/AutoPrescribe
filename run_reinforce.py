@@ -27,7 +27,7 @@ class Scorer(object):
         intersection = len(s0.intersection(s1))
         union = len(s0.union(s1))
         score = 0.0 if union == 0 else float(intersection) / union
-        print(score)
+        # print(score)
         return score
 
     def predict(self, instances):
@@ -38,7 +38,7 @@ class Scorer(object):
         return rewards
 
 
-model.load_params('build/mimic_seq2seq_seed13_100d_lr0.001_h256.model_28_75')
+model.load_params('build/mimic_sorted_seq2seq_len_50_seed13_100d_lr0.001_h256.model')
 model.do_reinforce(Scorer())
 # model.do_eval(training = False, filename = 'mimic_seq2seq.h256.txt', max_batch = 5000)
 
