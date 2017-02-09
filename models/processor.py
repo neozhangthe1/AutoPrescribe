@@ -176,9 +176,9 @@ class Processor:
         return source_inputs, target_inputs, target_outputs, source_mask_inputs, target_mask_inputs
 
     def build_index(self):
-        self.source_vocab["START"] = max(self.target_vocab.values()) + 1
-        self.source_vocab["END"] = max(self.target_vocab.values()) + 1
-        self.source_vocab["UNK"] = max(self.target_vocab.values()) + 1
+        # self.source_vocab["START"] = max(self.target_vocab.values()) + 1
+        # self.source_vocab["END"] = max(self.target_vocab.values()) + 1
+        # self.source_vocab["UNK"] = max(self.target_vocab.values()) + 1
         self.target_vocab["START"] = max(self.target_vocab.values()) + 1
         self.target_vocab["END"] = max(self.target_vocab.values()) + 1
         self.target_vocab["UNK"] = max(self.target_vocab.values()) + 1
