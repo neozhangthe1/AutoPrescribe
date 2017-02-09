@@ -263,6 +263,9 @@ class CoverageModel:
             for step, (source_inputs, target_inputs, target_outputs, source_mask_inputs, target_mask_inputs,
                        refs) in enumerate(p.gen_batch(p.train_data)):
                 samp_y = self.sample_fn(source_inputs, source_mask_inputs)
+                print("samp_y", samp_y)
+                gen_y = self.test_fn(source_inputs, source_mask_inputs)
+                print("gen_y", gen_y)
                 predictions = []
                 for j in range(len(refs)):
                     predictions.append(p.decode(samp_y[j], refs[j]))
