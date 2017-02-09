@@ -117,7 +117,7 @@ class CoverageModel:
 
         reward_inputs = T.matrix()  # (batch, dec_len)
         reinforce_loss = (
-        py * T.extra_ops.to_one_hot(target_outputs.flatten(), processor.char_cnt + processor.extra_char_cnt)).sum(
+        py * T.extra_ops.to_one_hot(target_outputs.flatten(), processor.target_vocab_size)).sum(
             axis=1)  # (batch * dec_len)
         reinforce_loss = - (reinforce_loss * target_mask_inputs.flatten() * reward_inputs.flatten()).mean()
         reinforce_updates = lasagne.updates.adam(reinforce_loss, params, learning_rate=config.reinforce_learning_rate)
