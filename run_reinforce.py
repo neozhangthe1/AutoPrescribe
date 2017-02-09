@@ -26,7 +26,7 @@ class Scorer(object):
         s1 = set(s1)
         intersection = len(s0.intersection(s1))
         union = len(s0.union(s1))
-        return 0 if union == 0 else float(intersection) / union
+        return 0.0 if union == 0 else float(intersection) / union
 
 
     def predict(self, instances):
