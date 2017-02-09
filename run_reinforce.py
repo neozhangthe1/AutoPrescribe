@@ -17,7 +17,7 @@ model = CoverageModel(p, config)
 
 # model.do_train()
 
-class scorer(object):
+class Scorer(object):
     def __init__(self):
         pass
 
@@ -37,7 +37,7 @@ class scorer(object):
 
 
 model.load_params('build/mimic_seq2seq_seed13_100d_lr0.001_h256.model_28_75')
-model.do_reinforce(scorer)
+model.do_reinforce(Scorer())
 # model.do_eval(training = False, filename = 'mimic_seq2seq.h256.txt', max_batch = 5000)
 
 # model.load_params('../models/resume_seed13_100d_lr0.001_h256.model')
