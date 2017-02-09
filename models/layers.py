@@ -1351,7 +1351,7 @@ class GRUCopyPureSampleLayer(lasagne.layers.MergeLayer):
             # copy_probs = copy_probs / (T.sum(copy_probs, axis = 1, keepdims = True) + 1e-8) # (batch, enc_len)
             # copy_hid = T.batched_dot(copy_probs, enc_feat) # (batch, units)
 
-            return [next_input, hid, att]
+            return [next_input, hid, prob]
 
         step_fun = step
 
@@ -1375,7 +1375,7 @@ class GRUCopyPureSampleLayer(lasagne.layers.MergeLayer):
             # Retrieve the dimensionality of the incoming layer
             input_shape = self.input_shapes[0]
             # Explicitly unroll the recurrence instead of using scan
-            [token_out, hid_out, att], self.updates = unroll_scan(
+            [token_out, hid_out, prob], self.updates = unroll_scan(
                 fn=step_fun,
                 outputs_info=[input_init, hid_init, None],
                 go_backwards=self.backwards,
@@ -1384,7 +1384,7 @@ class GRUCopyPureSampleLayer(lasagne.layers.MergeLayer):
         else:
             # Scan op iterates over first dimension of input and repeatedly
             # applies the step function
-            [token_out, hid_out, att], self.updates = theano.scan(
+            [token_out, hid_out, prob], self.updates = theano.scan(
                 fn=step_fun,
                 go_backwards=self.backwards,
                 outputs_info=[input_init, hid_init, None],
