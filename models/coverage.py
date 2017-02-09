@@ -266,7 +266,8 @@ class CoverageModel:
                         print(u"".join(refs[j].target_text))
                 source_inputs, target_inputs, target_outputs, source_mask_inputs, target_mask_inputs = p.gen_one_batch(
                     refs)
-                print(refs)
+                print(len(refs))
+                print(refs[0].target_text)
                 instances = [[ref.target_text, ref.source_text] for ref in refs]
                 rewards = np.array(scorer.predict(instances), dtype=np.float32)
                 rewards = np.tile(rewards, (config.target_len, 1)).transpose()  # (batch, dec_len)
