@@ -194,14 +194,54 @@ def group_encounter_by_diag(diag_pres):
         encounter_by_diag[tuple(p[0])].append(pres)
 
 
-def get_encounter_level(encounters, level):
+def get_encounter_level(encounters, level, sorted_diag_rank):
     new_encounters = []
     for enc in encounters:
-        new_encounters.append((enc[0], [code[:level*2] for code in enc[1]]))
-    dump(new_encounters, "sutter_encounters_%s.pkl" % level)
+        input = []
+        output = []
+        for code in enc[0]:
+            if len(code) > 0:
+                input.append(code.replace(".", ""))
+        for code in enc[1]:
+            if len(code) > 0:
+                output.append(code[:level])
+        new_encounters.append((input, output))
+    new_encounters_clean = clean_encounters(new_encounters, sorted_diag_rank)
+    print(len(new_encounters_clean), len(new_encounters))
+    dump(new_encounters_clean, "sutter_encounters_%s.pkl" % level)
+    dump(new_encounters_clean[:2200000], "sutter_encounters_%s.train.pkl" % level)
+    dump(new_encounters_clean[2200000:], "sutter_encounters_%s.test.pkl" % level)
+    gen_vocab(new_encounters_clean, level)
 
 
-def gen_vocab(encounters):
+def get_freq(encounters):
+    diag_count = dd(int)
+    for enc in encounters:
+        for code in enc[0]:
+            diag_count[code] += 1
+    sorted_diag_count = sorted(diag_count.items(), key=lambda x: x[1], reverse=True)
+    sorted_diag_rank = {}
+    for i, (code, freq) in enumerate(sorted_diag_count):
+        sorted_diag_rank[code] = i
+    return sorted_diag_rank
+
+
+def clean_encounters(encounters, sorted_diag_rank):
+    cnt = 0
+    new_encounters = []
+    for i, enc in enumerate(encounters):
+        flag = True
+        for code in enc[0]:
+            if sorted_diag_rank[code] > 2000:
+                flag = False
+                cnt += 1
+                break
+        if flag:
+            new_encounters.append(enc)
+    return new_encounters
+
+
+def gen_vocab(encounters, level):
     diag_vocab = {}
     drug_vocab = {}
     cnt1 = 0
@@ -212,11 +252,11 @@ def gen_vocab(encounters):
                 diag_vocab[diag] = cnt1
                 cnt1 += 1
         for drug in p[1]:
-            if not drug[:6] in drug_vocab:
-                drug_vocab[drug[:6]] = cnt2
+            if not drug[:level] in drug_vocab:
+                drug_vocab[drug[:level]] = cnt2
                 cnt2 += 1
     dump(diag_vocab, "sutter_diag_vocab.pkl")
-    dump(drug_vocab, "sutter_drug_vocab_3.pkl")
+    dump(drug_vocab, "sutter_drug_vocab_%s.pkl" % level)
 
 
 def gen_parallel_text():

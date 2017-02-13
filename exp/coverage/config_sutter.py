@@ -1,13 +1,14 @@
 
 class config:
     # pkl_file = '../data/baixing.pairs.pkl'
-    train_pkl = 'data/sutter_encounter_sorted.train.pkl'
-    dev_pkl = 'data/sutter_encounter_sorted.dev.pkl'
+    level = 2
+    train_pkl = 'data/sutter_encounters_%s.train.pkl' % level
+    dev_pkl = 'data/sutter_encounters_%s.test.pkl' % level
     source_vocab_pkl = 'data/sutter_diag_vocab.pkl'
-    target_vocab_pkl = 'data/sutter_drug_vocab_3.pkl'
+    target_vocab_pkl = 'data/sutter_drug_vocab_%s.pkl' % level
     model_seed = 13
     vocab_size = 4000
-    batch_size = 512
+    batch_size = 256
     source_len = 20
     target_len = 20
     embedding_size = 100
@@ -21,8 +22,8 @@ class config:
     print_reinforce_per = 10
     max_epoch = 1000000
 
-    dir = 'build/'
-    saved_model_file = dir + 'sutter_seq2seq_sorted_seed{}_{}d_lr{}_h{}.model'.format(model_seed, embedding_size, learning_rate, enc_units)
+    # dir = 'build/'
+    # saved_model_file = dir + 'sutter_seq2seq_sorted_seed{}_{}d_lr{}_h{}.model'.format(model_seed, embedding_size, learning_rate, enc_units)
 
 def get_config():
     return config()

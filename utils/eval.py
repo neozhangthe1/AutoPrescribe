@@ -235,8 +235,15 @@ def merge():
 
     inputs = "E66.9,311,477.8,493.9".split(",")
     def get_results(inputs):
+        to_retrieve = []
         inputs = tuple(sorted([x.replace(".", "") for x in inputs]))
-        print(final_results[inputs])
+        for code in final_results:
+            if len(set(code).intersection(set(inputs))) > 0:
+                to_retrieve.append(code)
+        return to_retrieve
+        # print(final_results[inputs])
+
+    to_retrieve = get_results(inputs)
 
     drug_name = load("drug_name.pkl")
     diag_name = load("diag_name.pkl")
@@ -270,6 +277,29 @@ def merge():
                     f_out.write(",")
                 f_out.write(x + "," + drug_name[x].replace(",", " ") + "\n")
             f_out.write("\n")
+
+    with open("sutter_result_1.csv", "w") as f_out:
+        for k in to_retrieve:
+            r = final_results[k]
+            for i, x in enumerate(k):
+                if i == 0:
+                    f_out.write("Diagnosis_%s:," % i)
+                else:
+                    f_out.write(",")
+                f_out.write(x + "," + diag_name[x].replace(",", " ") + "\n")
+            # prescriptions = set()
+            for j, item in enumerate(r):
+                item_0 = []
+                if len(item) > 0:
+                    item_0 = item[0]
+                for i, x in enumerate(item_0):
+                    if i == 0:
+                        f_out.write("Method_%s:," % j)
+                    else:
+                        f_out.write(",")
+                    f_out.write(x + "," + drug_name[x].replace(",", " ") + "\n")
+            f_out.write("\n")
+
 
 
     with open("sutter_results.csv", "w") as f_out:

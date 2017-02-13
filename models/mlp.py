@@ -8,26 +8,27 @@ from sklearn import metrics
 
 
 class MLP(object):
-    def __init__(self, data="sutter"):
+    def __init__(self, data="sutter", level=2):
         self.model = Sequential()
         self.train_x, self.train_y, self.test_x, self.test_y = [], [], [], []
         self.input_dim = 0
         self.output_dim = 0
         self.data = data
+        self.level = level
 
     def build_model(self):
-        self.model.add(Dense(output_dim=2000, input_dim=self.input_dim))
+        self.model.add(Dense(output_dim=500, input_dim=self.input_dim))
         self.model.add(Activation("relu"))
-        self.model.add(Dense(output_dim=1000, input_dim=self.input_dim))
+        self.model.add(Dense(output_dim=500, input_dim=self.input_dim))
         self.model.add(Activation("relu"))
-        self.model.add(Dense(output_dim=1000, input_dim=self.input_dim))
+        self.model.add(Dense(output_dim=500, input_dim=self.input_dim))
         self.model.add(Activation("relu"))
         # self.model.add(Dense(output_dim=2000, input_dim=self.input_dim))
         # self.model.add(Activation("relu"))
         self.model.add(Dense(output_dim=self.output_dim))
         self.model.add(Activation("softmax"))
 
-        self.model.compile(loss='categorical_crossentropy', optimizer=SGD(lr=0.01, momentum=0.9, nesterov=True), metrics=['accuracy', 'precision', 'recall'])
+        self.model.compile(loss='categorical_crossentropy', optimizer=SGD(lr=0.01, momentum=0.9, nesterov=True), metrics=['accuracy', 'precision', 'recall', 'fmeasure'])
 
     def load_data(self, train_set, test_set, source_size, target_size):
         self.train_x = np.zeros((len(train_set), source_size))
@@ -49,7 +50,7 @@ class MLP(object):
 
     def fit(self, epoch):
         self.model.fit(self.train_x, self.train_y, validation_data=(self.test_x, self.test_y), nb_epoch=epoch, batch_size=32, verbose=True)
-        self.model.save(self.data + "_mlp_model.h5")
+        self.model.save(self.data + "_" + str(self.level) + "_mlp_model.h5")
 
     def eval(self):
         loss_and_metrics = self.model.evaluate(self.test_x, self.test_y, batch_size=32)
@@ -62,10 +63,11 @@ class MLP(object):
 
 
 def train():
+    level = 2
     input_vocab = load("sutter_diag_vocab.pkl")
-    output_vocab = load("sutter_drug_vocab_3.pkl")
-    train_encounters = load("sutter_encounter.train.pkl")
-    test_encounters  = load("sutter_encounter.dev.pkl")
+    output_vocab = load("sutter_drug_vocab_%s.pkl" % level)
+    train_encounters = load("sutter_encounters_%s.train.pkl" % level)
+    test_encounters  = load("sutter_encounters_%s.test.pkl" % level)
     test_set = []
     train_set = []
     for enc in train_encounters:
@@ -73,9 +75,9 @@ def train():
     for enc in test_encounters:
         test_set.append(([input_vocab[code] for code in enc[0]], [output_vocab[code] for code in enc[1]]))
     mlp = MLP()
-    mlp.load_data(train_set, test_set[:1000], len(input_vocab), len(output_vocab))
+    mlp.load_data(train_set, test_set[:5000], len(input_vocab), len(output_vocab))
     mlp.build_model()
-    mlp.fit(1)
+    mlp.fit(5)
     mlp.predict(test_set)
 
 def train_mimic():
