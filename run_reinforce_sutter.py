@@ -42,7 +42,7 @@ class Scorer(object):
         return rewards
 
 
-model.load_params('build/sutter_%s_%s_seq2seq.model' % (config.level, config.order))
+model.load_params('build/sutter_%s_%s_seq2seq.model_0_4000' % (config.level, config.order))
 model.do_reinforce(Scorer())
 # model.do_eval(training = False, filename = 'mimic_seq2seq.h256.txt', max_batch = 5000)
 
