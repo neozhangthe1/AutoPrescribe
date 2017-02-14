@@ -5,15 +5,19 @@ from utils.data import dump
 
 config = config.get_config()
 
+dir = 'build/'
+config.saved_model_file = dir + 'sutter_%s_%s_seq2seq.model' % (config.level, config.order)
 print(config.saved_model_file.split('/')[-1])
+
+
 p = Processor(config)
 model = CoverageModel(p, config)
 
 # model.do_train()
 
-model.load_params('build/sutter_seq2seq_sorted_seed13_100d_lr0.001_h256.model')
+model.load_params(config.saved_model_file)
 # model.do_reinforce(scorer)
-model.do_eval(training = False, filename = 'sutter_sorted_seq2seq.h256.txt', max_batch = 5000000)
+model.do_eval(training = False, filename = 'sutter_%s_%s_seq2seq.txt' % (config.level, config.order), max_batch = 5000000)
 
 # model.load_params('../models/resume_seed13_100d_lr0.001_h256.model')
 # ret = model.do_generate(data)
@@ -50,7 +54,7 @@ cnt = 0
 results = []
 input = []
 truth = []
-for line in open("sutter_sorted_seq2seq.h256.txt"):
+for line in open('sutter_%s_%s_seq2seq.txt' % (config.level, config.order)):
     if cnt % 3 == 0:
         input = set(line.strip().split("S: ")[1].split(" "))
     if cnt % 3 == 1:
@@ -63,4 +67,4 @@ for line in open("sutter_sorted_seq2seq.h256.txt"):
         if len(truth) > 0:
             results.append((input, truth, result))
     cnt += 1
-dump(results, "sutter_sorted_result_seq2seq.pkl")
+dump(results, "sutter_%s_%s_result_seq2seq.pkl" % (config.level, config.order))

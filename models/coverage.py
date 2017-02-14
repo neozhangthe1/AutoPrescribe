@@ -6,6 +6,7 @@ import numpy as np
 import theano
 from theano import tensor as T
 from theano.compile.nanguardmode import NanGuardMode
+from utils.data import dump
 
 from models import layers
 
@@ -256,6 +257,28 @@ class CoverageModel:
                     print('epoch', epoch, 'step', step)
                     print('train', train_loss, 'dev', dev_loss, 'min', min_measure)
                     self.do_eval()
+                if step % 5000 == 0:
+                    self.do_eval(training = False, filename = 'sutter_%s_%s_seq2seq_e%s_s%s.txt' % (config.level, config.order, epoch, step), max_batch = 5000000)
+                    cnt = 0
+                    results = []
+                    input = []
+                    truth = []
+                    for line in open('sutter_%s_%s_seq2seq_e%s_s%s.txt' % (config.level, config.order, epoch, step)):
+                        if cnt % 3 == 0:
+                            input = set(line.strip().split("S: ")[1].split(" "))
+                        if cnt % 3 == 1:
+                            if len(line.strip().split("T: ")) <= 1:
+                                truth = []
+                                continue
+                            truth = set(line.strip().split("T: ")[1].split(" "))
+                        if cnt % 3 == 2:
+                            result = set(line.strip().split("Gen: ")[1].split("END")[0].strip().split(" "))
+                            if '' in result:
+                                result.remove('')
+                            if len(truth) > 0:
+                                results.append((input, truth, result))
+                        cnt += 1
+                    dump(results, "sutter_%s_%s_result_seq2seq_e%s_s%s.pkl" % (config.level, config.order, epoch, step))
 
     def do_reinforce(self, scorer):
         p, config = self.processor, self.config
