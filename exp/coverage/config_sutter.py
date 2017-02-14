@@ -12,9 +12,9 @@ class config:
     batch_size = 256
     source_len = 20
     target_len = 20
-    embedding_size = 100
-    enc_units = 256
-    dec_units = 256
+    embedding_size = 200
+    enc_units = 200
+    dec_units = 200
     grad_clipping = 10
     learning_rate = 1e-3
     reinforce_learning_rate = 1e-5
