@@ -3,7 +3,7 @@ class config:
     # pkl_file = '../data/baixing.pairs.pkl'
     name = "sutter"
     level = 2
-    order = "freq"
+    order = "rare"
     train_pkl = 'data/sutter_encounters_%s.train_%s.pkl' % (level, order)
     dev_pkl = 'data/sutter_encounters_%s.test_%s.pkl' % (level, order)
     source_vocab_pkl = 'data/sutter_diag_vocab.pkl'

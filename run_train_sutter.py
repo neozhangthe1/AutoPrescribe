@@ -11,7 +11,7 @@ from utils.data import dump
 
 config = config.get_config()
 dir = 'build/'
-config.saved_model_file = dir + 'sutter_%s_%s_seq2seq.model' % (config.level, config.order)
+config.saved_model_file = dir + 'sutter_%s_%s_seq2seq.model_0_4000' % (config.level, config.order)
 
 
 print(config.saved_model_file.split('/')[-1])
