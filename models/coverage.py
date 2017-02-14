@@ -45,6 +45,7 @@ class CoverageModel:
         l_target = lasagne.layers.EmbeddingLayer(l_target_inputs, processor.target_vocab_size, config.embedding_size)
         self.W1 = l_source.W
         self.W2 = l_target.W
+        # T.sum(l_source.W)
         # l_s_gru_fw = lasagne.layers.GRULayer(l_source, config.enc_units, mask_input=l_source_mask_inputs,
         #                                      grad_clipping=config.grad_clipping)
         # l_s_gru_bw = lasagne.layers.GRULayer(l_source, config.enc_units, mask_input=l_source_mask_inputs,
@@ -52,14 +53,14 @@ class CoverageModel:
         # l_source = lasagne.layers.ConcatLayer([l_s_gru_fw, l_s_gru_bw], axis=2)
         # l_source = lasagne.layers.GRULayer(l_source, config.enc_units, mask_input=l_source_mask_inputs,
         #                                    grad_clipping=config.grad_clipping)
-        l_source_last = lasagne.layers.ElemwiseSumLayer(l_source) #lasagne.layers.SliceLayer(l_source, -1, axis=1)
+        # l_source_last = lasagne.layers.ElemwiseSumLayer(l_source) #lasagne.layers.SliceLayer(l_source, -1, axis=1)
 
         l_target_outputs = layers.GRUCoverageTrainLayer(l_target_inputs, config.dec_units, mask_input=l_target_mask_inputs,
                                                     grad_clipping=config.grad_clipping, source_token_cnt=processor.source_vocab_size,
                                                     target_token_cnt=processor.target_vocab_size, l_enc_feat=l_source,
                                                     l_enc_mask=l_source_mask_inputs,
                                                     l_output=l_output, W_emb=self.W2,
-                                                    unk_index=processor.get_char_index('UNK', False), hid_init=l_source_last)
+                                                    unk_index=processor.get_char_index('UNK', False))#, hid_init=l_source_last)
         l_t = l_target_outputs
         l_target_outputs = lasagne.layers.ReshapeLayer(l_target_outputs, (-1, [2]))  # (batch * dec_len, vocab + extra)
 
@@ -67,14 +68,14 @@ class CoverageModel:
                                         source_token_cnt=processor.source_vocab_size, target_token_cnt=processor.target_vocab_size,
                                         l_enc_feat=l_source, l_enc_mask=l_source_mask_inputs,
                                         W_emb=self.W2, resetgate=l_t.resetgate, updategate=l_t.updategate,
-                                        hidden_update=l_t.hidden_update, hid_init=l_source_last,
+                                        hidden_update=l_t.hidden_update, #hid_init=l_source_last,
                                         unk_index=processor.get_char_index('UNK', False),
                                         start_index=processor.get_char_index('START', False), W_gen = l_t.W_gen, gen_len=config.target_len)
         l_att = layers.GRUCoverageAttLayer(config.dec_units, grad_clipping=config.grad_clipping,
                                         source_token_cnt=processor.source_vocab_size, target_token_cnt=processor.target_vocab_size,
                                         l_enc_feat=l_source, l_enc_mask=l_source_mask_inputs,
                                         W_emb=self.W2, resetgate=l_t.resetgate, updategate=l_t.updategate,
-                                        hidden_update=l_t.hidden_update, hid_init=l_source_last,
+                                        hidden_update=l_t.hidden_update, #hid_init=l_source_last,
                                         unk_index=processor.get_char_index('UNK', False),
                                         start_index=processor.get_char_index('START', False), W_gen = l_t.W_gen, gen_len=config.target_len)
         self.l = l_target_outputs
