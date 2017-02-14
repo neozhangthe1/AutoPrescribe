@@ -67,8 +67,8 @@ class GRUCoverageTrainLayer(lasagne.layers.MergeLayer):
         incomings.append(l_output)
         self.output_index = len(incomings) - 1
 
-        for inc in incomings:
-            print(inc)
+        # for inc in incomings:
+        #     print(inc)
 
         # Initialize parent layer
         super(GRUCoverageTrainLayer, self).__init__(incomings, **kwargs)
@@ -176,7 +176,7 @@ class GRUCoverageTrainLayer(lasagne.layers.MergeLayer):
         output = output.dimshuffle(1, 0)
 
         seq_len, num_batch = input.shape
-        print("seq len", seq_len, "num batch", num_batch)
+        # print("seq len", seq_len, "num batch", num_batch)
         # Stack input weight matrices into a (num_inputs, 3*num_units)
         # matrix, which speeds up computation
         W_in_stacked = T.concatenate(
@@ -193,7 +193,7 @@ class GRUCoverageTrainLayer(lasagne.layers.MergeLayer):
             [self.b_resetgate, self.b_updategate,
              self.b_hidden_update], axis=0)
 
-        print("W in", W_hid_stacked.shape)
+        # print("W in", W_hid_stacked.shape)
 
         # When theano.scan calls step, input_n will be (n_batch, 3*num_units).
         # We define a slicing function that extract the input to each GRU gate
@@ -397,7 +397,7 @@ class GRUCoverageTrainLayer(lasagne.layers.MergeLayer):
             # if scan is backward reverse the output
             if self.backwards:
                 prob_out = prob_out[:, ::-1]
-        print(prob_out.shape)
+        # print(prob_out.shape)
         return prob_out
 
 class GRUCoverageTestLayer(lasagne.layers.MergeLayer):
@@ -748,7 +748,7 @@ class GRUCoverageTestLayer(lasagne.layers.MergeLayer):
             if self.backwards:
                 prob_out = prob_out[:, ::-1]
 
-        print("att", att)
+        # print("att", att)
 
         return prob_out
 
@@ -1101,7 +1101,7 @@ class GRUCoverageAttLayer(lasagne.layers.MergeLayer):
             if self.backwards:
                 prob_out = prob_out[:, ::-1]
 
-        print("att", att)
+        # print("att", att)
 
         return att
 
