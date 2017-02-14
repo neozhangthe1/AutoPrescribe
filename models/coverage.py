@@ -295,7 +295,7 @@ class CoverageModel:
 
         max_reward = -1e6
 
-        with open("reinforce_reward_%s_%s_per_120.txt" % (config.name, config.level), "w") as f_out:
+        with open("reinforce_reward_%s_%s_per_1.txt" % (config.name, config.level), "w") as f_out:
             for epoch in range(self.config.max_epoch):
                 for step, (source_inputs, target_inputs, target_outputs, source_mask_inputs, target_mask_inputs,
                            refs) in enumerate(p.gen_batch(p.train_data)):
@@ -320,10 +320,11 @@ class CoverageModel:
 
                     if step % config.print_reinforce_per == 0:
                         train_reward = self.comp_reinforce_loss(p.train_data, scorer, 1)
-                        if step % 120 == 0:
-                            dev_reward = self.comp_reinforce_loss(p.dev_data, scorer, 1000)
+                        if step % 1 == 0:
+                            dev_reward = self.comp_reinforce_loss(p.dev_data, scorer, 1)
                             print("full dev loss", dev_reward)
                             f_out.write("%s\t%s\t%s\n" % (epoch, step, dev_reward))
+                            f_out.flush()
                         else:
                             dev_reward = self.comp_reinforce_loss(p.dev_data, scorer, 1)
                         if dev_reward > max_reward:
