@@ -288,7 +288,7 @@ class CoverageModel:
                     jaccard = eval_utils.get_average_jaccard(truth_list, prediction_list)
                     acc = eval_utils.get_average_accuracy(truth_list, prediction_list)
                     print("jaccard", jaccard, "acc", acc)
-                    dump(results, "%s_%s_%s_result_seq2seq_e%s_s%s_jacc%s_acc%s.pkl" % (config.name, config.level, config.order, epoch, step, jaccard, acc))
+                    dump(results, "%s_%s_%s_result_seq2seq_e%s_s%s_jacc%s_acc%s.pkl" % (config.name, config.level, config.order, epoch, step, round(jaccard, 5), round(acc, 5)))
 
     def do_reinforce(self, scorer):
         p, config = self.processor, self.config
