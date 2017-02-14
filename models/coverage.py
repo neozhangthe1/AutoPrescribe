@@ -9,6 +9,7 @@ from theano.compile.nanguardmode import NanGuardMode
 from utils.data import dump
 
 from models import layers
+from utils import eval as eval_utils
 
 
 class CoverageModel:
@@ -282,7 +283,11 @@ class CoverageModel:
                             if len(truth) > 0:
                                 results.append((input, truth, result))
                         cnt += 1
-                    dump(results, "sutter_%s_%s_result_seq2seq_e%s_s%s.pkl" % (config.level, config.order, epoch, step))
+                    input_list, truth_list, prediction_list = eval_utils.get_results(results)
+                    jaccard = eval_utils.get_jaccard_k(truth_list, prediction_list)
+                    acc = eval_utils.get_average_accuracy(truth_list, prediction_list)
+                    print("jaccard", jaccard, "acc", acc)
+                    dump(results, "sutter_%s_%s_result_seq2seq_e%s_s%s_jacc%s_acc%s.pkl" % (config.level, config.order, epoch, step, jaccard, acc))
 
     def do_reinforce(self, scorer):
         p, config = self.processor, self.config

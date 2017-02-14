@@ -106,6 +106,15 @@ def evaluate(name):
         input_list.append(result[0])
         truth_list.append(result[1])
         prediction_list.append(result[2])
+    return input_list, truth_list, prediction_list
+
+def get_results(results):
+    input_list, truth_list, prediction_list = [], [], []
+    for i, result in enumerate(results):
+        input_list.append(result[0])
+        truth_list.append(result[1])
+        prediction_list.append(result[2])
+    return input_list, truth_list, prediction_list
 
 
 def get_jaccard_k(truth, prediction, k=1):
@@ -147,7 +156,8 @@ def get_average_jaccard(truth_list, prediction_list):
     for i, item in enumerate(prediction_list):
         jaccard += get_jaccard_k(truth_list[i], item)
         cnt += 1
-    print(jaccard / cnt)
+    # print(jaccard / cnt)
+    return float(jaccard) / cnt
 
 
 def get_accuracy(truth, prediction):
@@ -163,7 +173,8 @@ def get_average_accuracy(truth_list, prediction_list):
     for i, item in enumerate(prediction_list):
         acc += get_accuracy(truth_list[i], item)
         cnt += 1
-    print(acc / cnt)
+    # print(acc / cnt)
+    return float(acc) / cnt
 
 def get_macro_f1(truth_list, prediction_list):
     tp = dd(float)
