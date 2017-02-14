@@ -211,7 +211,7 @@ class GRUCoverageTrainLayer(lasagne.layers.MergeLayer):
             """
             input_emb = self.W_emb[input_n]
             # enc_feat: (batch, enc_len, units), hid_previous: (batch, units)
-            att = T.batched_dot(enc_feat, hid_previous) # (batch, enc_len)
+            att = T.batched_dot(enc_feat, enc_feat) # (batch, enc_len)
             att = T.nnet.softmax(att) * enc_mask # (batch, enc_len)
             att = att / (T.sum(att, axis = 1, keepdims = True) + 1e-8) # (batch, enc_len)
             att = T.batched_dot(att, enc_feat) # (batch, units)
