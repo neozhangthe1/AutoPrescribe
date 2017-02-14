@@ -295,7 +295,7 @@ class CoverageModel:
 
         max_reward = -1e6
 
-        with open("reinforce_reward", "w") as f_out:
+        with open("reinforce_reward_%s_%s.txt" % (config.name, config.level), "w") as f_out:
             for epoch in range(self.config.max_epoch):
                 for step, (source_inputs, target_inputs, target_outputs, source_mask_inputs, target_mask_inputs,
                            refs) in enumerate(p.gen_batch(p.train_data)):
@@ -308,8 +308,7 @@ class CoverageModel:
                         predictions.append(p.decode(samp_y[j], refs[j]))
                         # if j == 0:
                         #     print(predictions)
-                    source_inputs, target_inputs, target_outputs, source_mask_inputs, target_mask_inputs = p.gen_one_batch(
-                        refs)
+                    source_inputs, target_inputs, target_outputs, source_mask_inputs, target_mask_inputs = p.gen_one_batch(refs)
                     # print(predictions[0])
                     # print(refs[0].target_text)
                     instances = [[ref.target_text, predictions[i]] for i, ref in enumerate(refs)]
@@ -320,12 +319,13 @@ class CoverageModel:
                     self.reinforce_fn(source_inputs, target_inputs, target_outputs, source_mask_inputs, target_mask_inputs, rewards)
 
                     if step % config.print_reinforce_per == 0:
-                        train_reward = self.comp_reinforce_loss(p.train_data, scorer)
+                        train_reward = self.comp_reinforce_loss(p.train_data, scorer, 10)
                         if step % 500 == 0:
                             dev_reward = self.comp_reinforce_loss(p.dev_data, scorer, 100000)
-                        else:
-                            dev_reward = self.comp_reinforce_loss(p.dev_data, scorer)
+                            print("full dev loss", dev_reward)
                             f_out.write("%s\t%s\t%s\n" % (epoch, step, dev_reward))
+                        else:
+                            dev_reward = self.comp_reinforce_loss(p.dev_data, scorer, 10)
                         if dev_reward > max_reward:
                             max_reward = dev_reward
                             self.save_params(config.saved_model_file)
