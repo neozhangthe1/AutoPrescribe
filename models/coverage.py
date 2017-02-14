@@ -320,12 +320,12 @@ class CoverageModel:
 
                     if step % config.print_reinforce_per == 0:
                         train_reward = self.comp_reinforce_loss(p.train_data, scorer, 10)
-                        # if step % 500 == 0:
-                        dev_reward = self.comp_reinforce_loss(p.dev_data, scorer, 100000)
-                        print("full dev loss", dev_reward)
-                        f_out.write("%s\t%s\t%s\n" % (epoch, step, dev_reward))
-                        # else:
-                        #     dev_reward = self.comp_reinforce_loss(p.dev_data, scorer, 10)
+                        if step % 100 == 0:
+                            dev_reward = self.comp_reinforce_loss(p.dev_data, scorer, 100000)
+                            print("full dev loss", dev_reward)
+                            f_out.write("%s\t%s\t%s\n" % (epoch, step, dev_reward))
+                        else:
+                            dev_reward = self.comp_reinforce_loss(p.dev_data, scorer, 10)
                         if dev_reward > max_reward:
                             max_reward = dev_reward
                             self.save_params(config.saved_model_file)
