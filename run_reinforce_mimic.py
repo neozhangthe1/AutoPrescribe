@@ -10,6 +10,7 @@ from exp.coverage import config_mimic as config
 from utils.data import dump
 
 config = config.get_config()
+config.order = "random"
 dir = 'build/'
 config.saved_model_file = dir + 'rf_%s_%s_%s_seq2seq.model' % (config.name, config.level, config.order)
 
@@ -40,7 +41,7 @@ class Scorer(object):
             score_j = self.jaccard(instance[0], instance[1])
             rewards.append(score_j)
         return rewards
-config.order = "random"
+
 
 model.load_params('build/%s_%s_%s_seq2seq.model_28_0' % (config.name, config.level, config.order))
 model.do_reinforce(Scorer())
