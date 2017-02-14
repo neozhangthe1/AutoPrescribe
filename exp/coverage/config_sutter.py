@@ -1,6 +1,7 @@
 
 class config:
     # pkl_file = '../data/baixing.pairs.pkl'
+    name = "sutter"
     level = 2
     order = "freq"
     train_pkl = 'data/sutter_encounters_%s.train_%s.pkl' % (level, order)

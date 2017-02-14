@@ -259,17 +259,17 @@ class CoverageModel:
                     dev_loss = self.comp_loss(p.dev_data)
                     if dev_loss < min_measure:
                         min_measure = dev_loss
-                        self.save_params(config.saved_model_file)
+                        self.save_params(config.saved_model_file + "_%s_%s" % (epoch, int(step / 1000) * 1000))
                     print('epoch', epoch, 'step', step)
                     print('train', train_loss, 'dev', dev_loss, 'min', min_measure)
                     self.do_eval()
                 if step % 5000 == 0:
-                    self.do_eval(training = False, filename = 'sutter_%s_%s_seq2seq_e%s_s%s.txt' % (config.level, config.order, epoch, step), max_batch = 10000)
+                    self.do_eval(training = False, filename = '%s_%s_%s_seq2seq_e%s_s%s.txt' % (config.name, config.level, config.order, epoch, step), max_batch = 10000)
                     cnt = 0
                     results = []
                     input = []
                     truth = []
-                    for line in open('sutter_%s_%s_seq2seq_e%s_s%s.txt' % (config.level, config.order, epoch, step)):
+                    for line in open('%s_%s_%s_seq2seq_e%s_s%s.txt' % (config.name, config.level, config.order, epoch, step)):
                         if cnt % 3 == 0:
                             input = list(set(line.strip().split("S: ")[1].split(" ")))
                         if cnt % 3 == 1:
@@ -288,7 +288,7 @@ class CoverageModel:
                     jaccard = eval_utils.get_average_jaccard(truth_list, prediction_list)
                     acc = eval_utils.get_average_accuracy(truth_list, prediction_list)
                     print("jaccard", jaccard, "acc", acc)
-                    dump(results, "sutter_%s_%s_result_seq2seq_e%s_s%s_jacc%s_acc%s.pkl" % (config.level, config.order, epoch, step, jaccard, acc))
+                    dump(results, "%s_%s_%s_result_seq2seq_e%s_s%s_jacc%s_acc%s.pkl" % (config.name, config.level, config.order, epoch, step, jaccard, acc))
 
     def do_reinforce(self, scorer):
         p, config = self.processor, self.config

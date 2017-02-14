@@ -209,8 +209,8 @@ def get_encounter_level(encounters, level, sorted_diag_rank):
     new_encounters_clean = clean_encounters(new_encounters, sorted_diag_rank)
     print(len(new_encounters_clean), len(new_encounters))
     dump(new_encounters_clean, "sutter_encounters_%s.pkl" % level)
-    dump(new_encounters_clean[:2200000], "sutter_encounters_%s.train.pkl" % level)
-    dump(new_encounters_clean[2200000:], "sutter_encounters_%s.test.pkl" % level)
+    dump(new_encounters_clean[:len(new_encounters_clean) * 0.8], "sutter_encounters_%s.train.pkl" % level)
+    dump(new_encounters_clean[len(new_encounters_clean) * 0.8:], "sutter_encounters_%s.test.pkl" % level)
     gen_vocab(new_encounters_clean, level)
 
 

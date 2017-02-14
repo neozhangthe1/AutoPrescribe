@@ -80,3 +80,111 @@ def sort_encounter():
         sorted_test.append((d[0], sorted(d[1])))
     dump(sorted_train, "mimic_encounter_gpi_sorted.train.pkl")
     dump(sorted_test, "mimic_encounter_gpi_sorted.dev.pkl")
+
+
+
+def get_encounter_level(encounters, level, sorted_diag_rank):
+    new_encounters = []
+    for enc in encounters:
+        input = []
+        output = []
+        for code in enc[0]:
+            if len(code) > 0:
+                input.append(code.replace(".", ""))
+        for code in enc[1]:
+            if len(code) > 0:
+                output.append(code[:level])
+        new_encounters.append((input, output))
+    new_encounters_clean = clean_encounters(new_encounters, sorted_diag_rank)
+    print(len(new_encounters_clean), len(new_encounters))
+    dump(new_encounters_clean, "mimic_encounters_%s.pkl" % level)
+    dump(new_encounters_clean[:int(len(new_encounters_clean) * 0.8)], "mimic_encounters_%s.train.pkl" % level)
+    dump(new_encounters_clean[int(len(new_encounters_clean) * 0.8):], "mimic_encounters_%s.test.pkl" % level)
+    gen_vocab(new_encounters_clean, level)
+
+
+def get_freq(encounters):
+    diag_count = dd(int)
+    for enc in encounters:
+        for code in enc[0]:
+            diag_count[code] += 1
+    sorted_diag_count = sorted(diag_count.items(), key=lambda x: x[1], reverse=True)
+    sorted_diag_rank = {}
+    for i, (code, freq) in enumerate(sorted_diag_count):
+        sorted_diag_rank[code] = i
+    return sorted_diag_rank
+
+
+def clean_encounters(encounters, sorted_diag_rank):
+    cnt = 0
+    new_encounters = []
+    for i, enc in enumerate(encounters):
+        flag = True
+        for code in enc[0]:
+            if sorted_diag_rank[code] > 2000:
+                flag = False
+                cnt += 1
+                break
+        if flag:
+            new_encounters.append(enc)
+    return new_encounters
+
+
+def gen_vocab(encounters, level):
+    diag_vocab = {}
+    drug_vocab = {}
+    cnt1 = 0
+    cnt2 = 0
+    for p in encounters:
+        for diag in p[0]:
+            if not diag in diag_vocab:
+                diag_vocab[diag] = cnt1
+                cnt1 += 1
+        for drug in p[1]:
+            if not drug[:level] in drug_vocab:
+                drug_vocab[drug[:level]] = cnt2
+                cnt2 += 1
+    dump(diag_vocab, "mimic_diag_vocab.pkl")
+    dump(drug_vocab, "mimic_drug_vocab_%s.pkl" % level)
+
+
+def order_encounters(name):
+    import random
+    print(name)
+    encounters = load(name + '.pkl')
+    orders = ["voc", "random", "freq", 'rare']
+    ordered = [[] for _ in range(len(orders))]
+    counters = dd(int)
+    for enc in encounters:
+        for code in enc[1]:
+            counters[code] += 1
+    vocab = sorted(list(counters.keys()))
+    code_to_vocab_index = {}
+    for i in range(len(vocab)):
+        code_to_vocab_index[vocab[i]] = i
+    for enc in encounters:
+        if len(enc[1]) == 0:
+            continue
+        for i, order in enumerate(orders):
+            enc_1 = list(set(enc[1]))
+            if order == "voc":
+                enc_1 = sorted(enc_1, key=lambda x: code_to_vocab_index[x])
+                ordered[i].append((enc[0], enc_1))
+            elif order == "random":
+                random.shuffle(enc_1)
+                ordered[i].append((enc[0], enc_1))
+            elif order == "freq":
+                enc_1 = sorted(enc_1, key=lambda x: counters[x], reverse=True)
+                ordered[i].append((enc[0], enc_1))
+            elif order == "rare":
+                enc_1 = sorted(enc_1, key=lambda x: counters[x])
+                ordered[i].append((enc[0], enc_1))
+    for i, order in enumerate(orders):
+        dump(ordered[i], name+"_"+order+".pkl")
+
+order_encounters("mimic_encounters_2.train")
+order_encounters("mimic_encounters_2.test")
+order_encounters("mimic_encounters_4.train")
+order_encounters("mimic_encounters_4.test")
+order_encounters("mimic_encounters_6.train")
+order_encounters("mimic_encounters_6.test")
