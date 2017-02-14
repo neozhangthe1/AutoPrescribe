@@ -45,14 +45,14 @@ class CoverageModel:
         l_target = lasagne.layers.EmbeddingLayer(l_target_inputs, processor.target_vocab_size, config.embedding_size)
         self.W1 = l_source.W
         self.W2 = l_target.W
-        l_s_gru_fw = lasagne.layers.GRULayer(l_source, config.enc_units, mask_input=l_source_mask_inputs,
-                                             grad_clipping=config.grad_clipping)
-        l_s_gru_bw = lasagne.layers.GRULayer(l_source, config.enc_units, mask_input=l_source_mask_inputs,
-                                             grad_clipping=config.grad_clipping)
-        l_source = lasagne.layers.ConcatLayer([l_s_gru_fw, l_s_gru_bw], axis=2)
-        l_source = lasagne.layers.GRULayer(l_source, config.enc_units, mask_input=l_source_mask_inputs,
-                                           grad_clipping=config.grad_clipping)
-        l_source_last = lasagne.layers.SliceLayer(l_source, -1, axis=1)
+        # l_s_gru_fw = lasagne.layers.GRULayer(l_source, config.enc_units, mask_input=l_source_mask_inputs,
+        #                                      grad_clipping=config.grad_clipping)
+        # l_s_gru_bw = lasagne.layers.GRULayer(l_source, config.enc_units, mask_input=l_source_mask_inputs,
+        #                                      grad_clipping=config.grad_clipping)
+        # l_source = lasagne.layers.ConcatLayer([l_s_gru_fw, l_s_gru_bw], axis=2)
+        # l_source = lasagne.layers.GRULayer(l_source, config.enc_units, mask_input=l_source_mask_inputs,
+        #                                    grad_clipping=config.grad_clipping)
+        l_source_last = lasagne.layers.ElemwiseSumLayer(l_source) #lasagne.layers.SliceLayer(l_source, -1, axis=1)
 
         l_target_outputs = layers.GRUCoverageTrainLayer(l_target_inputs, config.dec_units, mask_input=l_target_mask_inputs,
                                                     grad_clipping=config.grad_clipping, source_token_cnt=processor.source_vocab_size,
