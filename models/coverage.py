@@ -204,6 +204,10 @@ class CoverageModel:
                     print("T:", refs[i].target_text)
                     print("Gen:", s)
                 else:
+                    print("step", s)
+                    print("eval S:", refs[i].source_text)
+                    print("eval T:", refs[i].target_text)
+                    print("eval Gen:", s)
                     fout.write(u"S: {}\n".format(u" ".join(refs[i].source_text)))
                     fout.write(u"T: {}\n".format(u" ".join(refs[i].target_text))) #refs[i].target_text))
                     fout.write(u"Gen: {}\n".format(u" ".join(s)))
