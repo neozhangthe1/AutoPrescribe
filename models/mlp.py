@@ -63,24 +63,94 @@ class MLP(object):
 
 
 def train():
-    level = 2
-    input_vocab = load("sutter_diag_vocab.pkl")
-    output_vocab = load("sutter_drug_vocab_%s.pkl" % level)
-    train_encounters = load("sutter_encounters_%s.train.pkl" % level)
-    test_encounters  = load("sutter_encounters_%s.test.pkl" % level)
+    level = 6
+    data = "mimic"
+    input_vocab = load("%s_diag_vocab.pkl" % data)
+    output_vocab = load("%s_drug_vocab_%s.pkl" % (data, level))
+    train_encounters = load("%s_encounters_%s.train.pkl" % (data, level))
+    test_encounters  = load("%s_encounters_%s.test.pkl" % (data, level))
     test_set = []
     train_set = []
     for enc in train_encounters:
         train_set.append(([input_vocab[code] for code in enc[0]], [output_vocab[code] for code in enc[1]]))
     for enc in test_encounters:
+        if len(enc[1]) == 0:
+            continue
         test_set.append(([input_vocab[code] for code in enc[0]], [output_vocab[code] for code in enc[1]]))
-    mlp = MLP()
+    mlp = MLP(data=data, level = level)
     mlp.load_data(train_set, test_set[:5000], len(input_vocab), len(output_vocab))
     mlp.build_model()
-    mlp.fit(5)
-    mlp.predict(test_set)
+    mlp.fit(20)
 
-def train_mimic():
+    input_dim = len(input_vocab)
+    output_dim = len(output_vocab)
+    test_x = np.zeros((len(test_set), input_dim))
+    test_y = np.zeros((len(test_set), output_dim))
+
+    for i, pair in enumerate(test_set):
+        for j in pair[0]:
+            test_x[i, j] = 1
+        if len(pair[1]) == 0:
+            print(i, pair)
+        for j in pair[1]:
+            test_y[i, j] = 1
+
+    index_to_source = {}
+    index_to_target = {}
+    for token in input_vocab:
+        index_to_source[input_vocab[token]] = token
+    for token in output_vocab:
+        index_to_target[output_vocab[token]] = token
+
+    import copy
+    labels, rs = mlp.predict(test_x)
+    auc = metrics.roc_auc_score(test_y, rs, 'micro')
+
+    for i in range(1, 20):
+        results = copy.deepcopy(rs)
+        threshold = float(i) / 500.0
+
+
+        results[results >= threshold] = 1
+        results[results < threshold] = 0
+
+        jaccard = metrics.jaccard_similarity_score(test_y, results)
+        acc = metrics.accuracy_score(test_y, results, )
+        # metrics.auc(test_y, results)
+        print(threshold, round(auc, 4), round(jaccard, 4), round(acc, 4))
+
+    labels, results = mlp.predict(test_x)
+    results[results >= 0.012] = 1
+    results[results < 0.012] = 0
+    cnts, indices = results.nonzero()
+    jaccard = metrics.jaccard_similarity_score(test_y, results)
+    zero_one = metrics.jaccard_similarity_score(test_y, results)
+
+
+    outputs = [[] for i in range(len(test_set))]
+    for i, cnt in enumerate(cnts):
+        outputs[cnt].append(index_to_target[indices[i]])
+
+    merge = []
+    for i, item in enumerate(outputs):
+        print(test_encounters[i][0])
+        print(test_encounters[i][1])
+        print(outputs[i])
+        print("")
+
+        merge.append(list(test_encounters[i]) + [outputs[i]])
+
+    from utils.data import dump
+    dump(merge, "mimic_result_mlp_0.012.pkl")
+
+    truth_list = []
+    prediction_list = []
+    for enc in merge:
+        truth_list.append(enc[1])
+        prediction_list.append(enc[2])
+
+
+def train_mimicq():
     input_vocab = load("mimic_diag_vocab.pkl")
     output_vocab = load("mimic_drug_vocab.pkl")
     train_encounters = load("mimic_encounter_gpi.train.pkl")

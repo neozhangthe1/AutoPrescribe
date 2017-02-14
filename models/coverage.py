@@ -148,7 +148,7 @@ class CoverageModel:
             if step >= config.max_loss_batch - 1: break
         return loss / cnt
 
-    def comp_reinforce_loss(self, data, scorer):
+    def comp_reinforce_loss(self, data, scorer, max_batch=1):
         p, config = self.processor, self.config
         rewards, cnt = 0, 0
         for step, (source_inputs, target_inputs, target_outputs, source_mask_inputs, target_mask_inputs,
@@ -166,7 +166,7 @@ class CoverageModel:
             rewards += np.array(scorer.predict(instances), dtype=np.float32).mean()
             cnt += 1
 
-            if step >= config.max_loss_batch - 1: break
+            if step >= max_batch - 1: break
         return rewards / cnt
 
     def save_params(self, filename):
@@ -295,34 +295,39 @@ class CoverageModel:
 
         max_reward = -1e6
 
-        for epoch in range(self.config.max_epoch):
-            for step, (source_inputs, target_inputs, target_outputs, source_mask_inputs, target_mask_inputs,
-                       refs) in enumerate(p.gen_batch(p.train_data)):
-                samp_y = self.sample_fn(source_inputs, source_mask_inputs)
-                # print("samp_y", samp_y)
-                # gen_y = self.test_fn(source_inputs, source_mask_inputs)
-                # print("gen_y", gen_y)
-                predictions = []
-                for j in range(len(refs)):
-                    predictions.append(p.decode(samp_y[j], refs[j]))
-                    # if j == 0:
-                    #     print(predictions)
-                source_inputs, target_inputs, target_outputs, source_mask_inputs, target_mask_inputs = p.gen_one_batch(
-                    refs)
-                # print(predictions[0])
-                # print(refs[0].target_text)
-                instances = [[ref.target_text, predictions[i]] for i, ref in enumerate(refs)]
-                rewards = np.array(scorer.predict(instances), dtype=np.float32)
-                rewards = np.tile(rewards, (config.target_len, 1)).transpose()  # (batch, dec_len)
-                # print(rewards)
+        with open("reinforce_reward", "w") as f_out:
+            for epoch in range(self.config.max_epoch):
+                for step, (source_inputs, target_inputs, target_outputs, source_mask_inputs, target_mask_inputs,
+                           refs) in enumerate(p.gen_batch(p.train_data)):
+                    samp_y = self.sample_fn(source_inputs, source_mask_inputs)
+                    # print("samp_y", samp_y)
+                    # gen_y = self.test_fn(source_inputs, source_mask_inputs)
+                    # print("gen_y", gen_y)
+                    predictions = []
+                    for j in range(len(refs)):
+                        predictions.append(p.decode(samp_y[j], refs[j]))
+                        # if j == 0:
+                        #     print(predictions)
+                    source_inputs, target_inputs, target_outputs, source_mask_inputs, target_mask_inputs = p.gen_one_batch(
+                        refs)
+                    # print(predictions[0])
+                    # print(refs[0].target_text)
+                    instances = [[ref.target_text, predictions[i]] for i, ref in enumerate(refs)]
+                    rewards = np.array(scorer.predict(instances), dtype=np.float32)
+                    rewards = np.tile(rewards, (config.target_len, 1)).transpose()  # (batch, dec_len)
+                    # print(rewards)
 
-                self.reinforce_fn(source_inputs, target_inputs, target_outputs, source_mask_inputs, target_mask_inputs, rewards)
+                    self.reinforce_fn(source_inputs, target_inputs, target_outputs, source_mask_inputs, target_mask_inputs, rewards)
 
-                if step % config.print_reinforce_per == 0:
-                    train_reward = self.comp_reinforce_loss(p.train_data, scorer)
-                    dev_reward = self.comp_reinforce_loss(p.dev_data, scorer)
-                    if dev_reward > max_reward:
-                        max_reward = dev_reward
-                        self.save_params(config.saved_model_file)
-                    print('epoch', epoch, 'step', step)
-                    print('train', train_reward, 'dev', dev_reward, 'max', max_reward)
+                    if step % config.print_reinforce_per == 0:
+                        train_reward = self.comp_reinforce_loss(p.train_data, scorer)
+                        if step % 500 == 0:
+                            dev_reward = self.comp_reinforce_loss(p.dev_data, scorer, 100000)
+                        else:
+                            dev_reward = self.comp_reinforce_loss(p.dev_data, scorer)
+                            f_out.write("%s\t%s\t%s\n" % (epoch, step, dev_reward))
+                        if dev_reward > max_reward:
+                            max_reward = dev_reward
+                            self.save_params(config.saved_model_file)
+                        print('epoch', epoch, 'step', step)
+                        print('train', train_reward, 'dev', dev_reward, 'max', max_reward)
