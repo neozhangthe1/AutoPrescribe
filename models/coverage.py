@@ -188,11 +188,11 @@ class CoverageModel:
         for step, (source_inputs, target_inputs, target_outputs, source_mask_inputs, target_mask_inputs,
                    refs) in enumerate(p.gen_batch(p.dev_data)):
             gen_y = self.test_fn(source_inputs, source_mask_inputs)
-            gen_att = self.att_fn(source_inputs, source_mask_inputs)
-            print(gen_y.shape)
-            print(type(gen_y))
-            print(gen_att.shape)
-            print(type(gen_att))
+            # gen_att = self.att_fn(source_inputs, source_mask_inputs)
+            # print(gen_y.shape)
+            # print(type(gen_y))
+            # print(gen_att.shape)
+            # print(type(gen_att))
             for i in range(gen_y.shape[0]):
                 if i >= 1 and training: break
                 s = []
@@ -206,7 +206,7 @@ class CoverageModel:
                     print("Gen:", s)
                 else:
                     if step % 1000 == 0:
-                        print("step", s)
+                        print("step", step)
                         print("eval S:", refs[i].source_text)
                         print("eval T:", refs[i].target_text)
                         print("eval Gen:", s)
