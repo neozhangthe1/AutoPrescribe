@@ -109,7 +109,7 @@ class CoverageModel:
                                                target_token_cnt=processor.target_vocab_size,
                                                l_enc_feat=l_source, l_enc_mask=l_source_mask_inputs,
                                                W_emb=self.W2, resetgate=l_t.resetgate, updategate=l_t.updategate,
-                                               hidden_update=l_t.hidden_update, hid_init=l_source_last,
+                                               hidden_update=l_t.hidden_update, #hid_init=l_source_last,
                                                unk_index=processor.get_char_index('UNK', False),
                                                start_index=processor.get_char_index('START', False),
                                                gen_len=config.target_len,
