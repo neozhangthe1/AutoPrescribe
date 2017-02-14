@@ -2,8 +2,9 @@
 class config:
     # pkl_file = '../data/baixing.pairs.pkl'
     level = 2
-    train_pkl = 'data/sutter_encounters_%s.train.pkl' % level
-    dev_pkl = 'data/sutter_encounters_%s.test.pkl' % level
+    order = "freq"
+    train_pkl = 'data/sutter_encounters_%s.train_%s.pkl' % (level, order)
+    dev_pkl = 'data/sutter_encounters_%s_%s.test.pkl' % (level, order)
     source_vocab_pkl = 'data/sutter_diag_vocab.pkl'
     target_vocab_pkl = 'data/sutter_drug_vocab_%s.pkl' % level
     model_seed = 13

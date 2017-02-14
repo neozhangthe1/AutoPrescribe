@@ -200,7 +200,7 @@ class CoverageModel:
                 if training:
                     print("S:", refs[i].source_text)
                     print("T:", refs[i].target_text)
-                    print("Gen:", u"".join(s))
+                    print("Gen:", s)
                 else:
                     fout.write(u"S: {}\n".format(u" ".join(refs[i].source_text)))
                     fout.write(u"T: {}\n".format(u" ".join(refs[i].target_text))) #refs[i].target_text))

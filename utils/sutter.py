@@ -259,6 +259,49 @@ def gen_vocab(encounters, level):
     dump(drug_vocab, "sutter_drug_vocab_%s.pkl" % level)
 
 
+def order_encounters(name):
+    import random
+    print(name)
+    encounters = load(name + '.pkl')
+    orders = ["voc", "random", "freq", 'rare']
+    ordered = [[] for _ in range(len(orders))]
+    counters = dd(int)
+    for enc in encounters:
+        for code in enc[1]:
+            counters[code] += 1
+    vocab = sorted(list(counters.keys()))
+    code_to_vocab_index = {}
+    for i in range(len(vocab)):
+        code_to_vocab_index[vocab[i]] = i
+    for enc in encounters:
+        if len(enc[1]) == 0:
+            continue
+        for i, order in enumerate(orders):
+            enc_1 = list(set(enc[1]))
+            if order == "voc":
+                enc_1 = sorted(enc_1, key=lambda x: code_to_vocab_index[x])
+                ordered[i].append((enc[0], enc_1))
+            elif order == "random":
+                random.shuffle(enc_1)
+                ordered[i].append((enc[0], enc_1))
+            elif order == "freq":
+                enc_1 = sorted(enc_1, key=lambda x: counters[x], reverse=True)
+                ordered[i].append((enc[0], enc_1))
+            elif order == "rare":
+                enc_1 = sorted(enc_1, key=lambda x: counters[x])
+                ordered[i].append((enc[0], enc_1))
+    for i, order in enumerate(orders):
+        dump(ordered[i], name+"_"+order+".pkl")
+
+
+order_encounters("sutter_encounters_2.test")
+order_encounters("sutter_encounters_4.train")
+order_encounters("sutter_encounters_4.test")
+order_encounters("sutter_encounters_6.train")
+order_encounters("sutter_encounters_6.test")
+
+
+
 def gen_parallel_text():
     f_out1 = open("sutter_diag.txt", "w")
     f_out2 = open("sutter_drug.txt", "w")
