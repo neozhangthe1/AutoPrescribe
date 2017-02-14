@@ -258,7 +258,7 @@ class CoverageModel:
                     print('train', train_loss, 'dev', dev_loss, 'min', min_measure)
                     self.do_eval()
                 if step % 5000 == 0:
-                    self.do_eval(training = False, filename = 'sutter_%s_%s_seq2seq_e%s_s%s.txt' % (config.level, config.order, epoch, step), max_batch = 5000000)
+                    self.do_eval(training = False, filename = 'sutter_%s_%s_seq2seq_e%s_s%s.txt' % (config.level, config.order, epoch, step), max_batch = 10000)
                     cnt = 0
                     results = []
                     input = []
