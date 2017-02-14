@@ -205,7 +205,7 @@ class CoverageModel:
                     print("T:", refs[i].target_text)
                     print("Gen:", s)
                 else:
-                    if step % 1000 == 0:
+                    if step % 1000 == 0 and i == 1:
                         print("step", step)
                         print("eval S:", refs[i].source_text)
                         print("eval T:", refs[i].target_text)
@@ -271,12 +271,12 @@ class CoverageModel:
                     truth = []
                     for line in open('sutter_%s_%s_seq2seq_e%s_s%s.txt' % (config.level, config.order, epoch, step)):
                         if cnt % 3 == 0:
-                            input = set(line.strip().split("S: ")[1].split(" "))
+                            input = list(set(line.strip().split("S: ")[1].split(" ")))
                         if cnt % 3 == 1:
                             if len(line.strip().split("T: ")) <= 1:
                                 truth = []
                                 continue
-                            truth = set(line.strip().split("T: ")[1].split(" "))
+                            truth = list(set(line.strip().split("T: ")[1].split(" ")))
                         if cnt % 3 == 2:
                             result = set(line.strip().split("Gen: ")[1].split("END")[0].strip().split(" "))
                             if '' in result:
@@ -285,7 +285,7 @@ class CoverageModel:
                                 results.append((input, truth, result))
                         cnt += 1
                     input_list, truth_list, prediction_list = eval_utils.get_results(results)
-                    jaccard = eval_utils.get_jaccard_k(truth_list, prediction_list)
+                    jaccard = eval_utils.get_average_jaccard(truth_list, prediction_list)
                     acc = eval_utils.get_average_accuracy(truth_list, prediction_list)
                     print("jaccard", jaccard, "acc", acc)
                     dump(results, "sutter_%s_%s_result_seq2seq_e%s_s%s_jacc%s_acc%s.pkl" % (config.level, config.order, epoch, step, jaccard, acc))
