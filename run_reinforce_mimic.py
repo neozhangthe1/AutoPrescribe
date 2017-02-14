@@ -40,9 +40,9 @@ class Scorer(object):
             score_j = self.jaccard(instance[0], instance[1])
             rewards.append(score_j)
         return rewards
+config.order = "random"
 
-
-model.load_params('build/%s_%s_%s_seq2seq.model' % (config.name, config.level, config.order))
+model.load_params('build/%s_%s_%s_seq2seq.model_28_0' % (config.name, config.level, config.order))
 model.do_reinforce(Scorer())
 # model.do_eval(training = False, filename = 'mimic_seq2seq.h256.txt', max_batch = 5000)
 
