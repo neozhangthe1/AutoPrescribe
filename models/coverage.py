@@ -295,7 +295,7 @@ class CoverageModel:
 
         max_reward = -1e6
 
-        with open("reinforce_reward_%s_%s_per_1.txt" % (config.name, config.level), "w") as f_out:
+        with open("reinforce_reward_%s_%s_%s_per_1.txt" % (config.name, config.level, config.order), "w") as f_out:
             for epoch in range(self.config.max_epoch):
                 for step, (source_inputs, target_inputs, target_outputs, source_mask_inputs, target_mask_inputs,
                            refs) in enumerate(p.gen_batch(p.train_data)):
