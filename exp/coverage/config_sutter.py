@@ -18,7 +18,7 @@ class config:
     dec_units = 200
     grad_clipping = 10
     learning_rate = 1e-3
-    reinforce_learning_rate = 1e-6
+    reinforce_learning_rate = 1e-7
     max_loss_batch = 1
     print_loss_per = 5
     print_reinforce_per = 10
