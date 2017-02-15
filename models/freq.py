@@ -39,40 +39,40 @@ def train():
     import numpy as np
     from sklearn import metrics
     level = 2
-    data = "sutter"
+    data = "mimic"
     # input_vocab = load("sutter_diag_vocab.pkl")
     # output_vocab = load("sutter_drug_vocab_%s.pkl" % level)
     input_vocab = load("%s_diag_vocab.pkl" % (data))
     output_vocab = load("%s_drug_vocab_%s.pkl" % (data, level))
     train_encounters = load("%s_encounters_%s.train.pkl" % (data, level))
     test_encounters = load("%s_encounters_%s.test.pkl" % (data, level))
-    test_set = []
-    train_set = []
-    for enc in test_encounters:
-        test_set.append((enc[0], [output_vocab[code] for code in enc[1]]))
+    # test_set = []
+    # train_set = []
+    # for enc in test_encounters:
+    #     test_set.append((enc[0], [output_vocab[code] for code in enc[1]]))
 
-    mfm = MostFreqMatch(1)
-    mfm.fit(test_encounters)
+    mfm = MostFreqMatch(3, "mimic")
+    mfm.fit(train_encounters)
 
-    output_dim = len(output_vocab)
-    test_y = np.zeros((len(test_set), output_dim))
-    test_result = np.zeros((len(test_set), output_dim))
-    for i, pair in enumerate(test_set):
-        for j in pair[1]:
-            test_y[i, j] = 1
-        for code in pair[0]:
-            if code in mfm.freq:
-                for tk in mfm.freq[code][:5]:
-                    test_result[output_vocab[tk[0]]] += 1
-
-
-    auc = metrics.roc_auc_score(test_y, test_result, 'micro')
+    # output_dim = len(output_vocab)
+    # test_y = np.zeros((len(test_set), output_dim))
+    # test_result = np.zeros((len(test_set), output_dim))
+    # for i, pair in enumerate(test_set):
+    #     for j in pair[1]:
+    #         test_y[i, j] = 1
+    #     for code in pair[0]:
+    #         if code in mfm.freq:
+    #             for tk in mfm.freq[code][:5]:
+    #                 test_result[output_vocab[tk[0]]] += 1
+    #
+    #
+    # auc = metrics.roc_auc_score(test_y, test_result, 'micro')
 
 
     results = []
     prediction_list = []
     truth_list = []
-    for item in test_set:
+    for item in test_encounters:
         prediction = mfm.predict(item[0])
         prediction_list.append(prediction)
         truth_list.append(item[1])

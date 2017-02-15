@@ -38,7 +38,7 @@ def get_data():
 
     fig, ax = plt.subplots(figsize=(8, 4))
 
-    for k in xs:
+    for k in name_mapping:
         line, = ax.plot([x*1.35 for x in xs[k]][:len(xs["random"])], '-', linewidth=2, label=name_mapping[k])
 
     # x = np.linspace(0, 10, 500)
@@ -50,7 +50,7 @@ def get_data():
     #
     # line2, = ax.plot(x, -1 * np.sin(x), dashes=[30, 5, 10, 5],
     #                  label='Dashes set proactively')
-    ax.set_xlabel("Epoch", fontsize=20)
+    ax.set_xlabel("Epochs", fontsize=20)
     ax.set_ylabel("Jaccard Coefficient", fontsize=20)
     for tick in ax.xaxis.get_major_ticks():
         tick.label.set_fontsize(15)
@@ -60,3 +60,29 @@ def get_data():
     # plt.show()
     fig.tight_layout()
     plt.savefig("traj_%s_%s.pdf" % (dataset, level))
+
+
+def plot_rf(f_name):
+    dataset = "mimic"
+    level = 2
+    results = []
+    for line in open(f_name):
+        x = line.strip().split()
+        if x[1] == '0':
+            results.append(float(x[2]))
+
+    fig, ax = plt.subplots(figsize=(4, 4))
+    ax.set_xlabel("Epochs", fontsize=20)
+    ax.set_ylabel("Average Rewards", fontsize=20)
+    for tick in ax.xaxis.get_major_ticks():
+        tick.label.set_fontsize(15)
+    for tick in ax.yaxis.get_major_ticks():
+        tick.label.set_fontsize(15)
+
+    line, = ax.plot(results, '-', linewidth=2)
+
+
+    # ax.legend(loc='lower right', fontsize=20)
+    # plt.show()
+    fig.tight_layout()
+    plt.savefig("rf_traj_%s_%s.pdf" % (dataset, level))

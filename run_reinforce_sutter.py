@@ -11,6 +11,7 @@ from utils.data import dump
 
 config = config.get_config()
 dir = 'build/'
+config.order = "random"
 config.saved_model_file = dir + 'rf_sutter_%s_%s_seq2seq.model' % (config.level, config.order)
 
 
@@ -42,7 +43,7 @@ class Scorer(object):
         return rewards
 
 
-model.load_params('build/sutter_%s_%s_seq2seq.model_0_4000' % (config.level, config.order))
+model.load_params('build/sutter_2_random_seq2seq.model_2_3000') #sutter_%s_%s_seq2seq.model_0_4000' % (config.level, config.order))
 model.do_reinforce(Scorer())
 # model.do_eval(training = False, filename = 'mimic_seq2seq.h256.txt', max_batch = 5000)
 
