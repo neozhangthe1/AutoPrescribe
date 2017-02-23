@@ -12,7 +12,7 @@ from models import layers
 from utils import eval as eval_utils
 
 
-class CoverageModel:
+class LEAPModel:
     def __init__(self, processor, config):
         self.config = config
         self.processor = processor
