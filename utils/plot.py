@@ -45,7 +45,7 @@ def get_data():
     fig, ax = plt.subplots(figsize=(8, 4))
 
     for k in name_mapping:
-        line, = ax.plot([x*1.35 for x in xs[k]][:len(xs["random"])], line_type[k], linewidth=2, label=name_mapping[k])
+        line, = ax.plot([x for x in xs[k]][:len(xs["random"])], line_type[k], linewidth=2, label=name_mapping[k])
 
     # x = np.linspace(0, 10, 500)
     # dashes = [10, 5, 100, 5]  # 10 points on, 5 off, 100 on, 5 off
