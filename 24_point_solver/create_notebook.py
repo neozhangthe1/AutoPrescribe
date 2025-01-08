@@ -26,11 +26,107 @@ This notebook implements a dataset generator for 24-point arithmetic problems wi
 """
     nb.cells.append(nbf.v4.new_markdown_cell(setup_md))
     
-    # Add dependency installation cell
-    install_code = """\
-!pip install numpy tqdm matplotlib
-print("Dependencies installed successfully!")"""
-    nb.cells.append(nbf.v4.new_code_cell(install_code))
+    # Add environment setup and dependency installation cells
+    setup_code = """\
+%%capture
+# Install required packages
+!pip install numpy tqdm matplotlib transformers torch accelerate
+!pip install git+https://github.com/QwenLM/Qwen.git
+"""
+    nb.cells.append(nbf.v4.new_code_cell(setup_code))
+    
+    # Add environment verification cell
+    verify_code = """\
+# Check Python version
+import sys
+print(f"Python version: {sys.version}")
+
+# Install required packages
+!pip install --quiet numpy tqdm matplotlib
+
+# Verify installations
+import pkg_resources
+required_packages = ['numpy', 'tqdm', 'matplotlib']
+installed_packages = [pkg.key for pkg in pkg_resources.working_set]
+print("\nPackage versions:")
+for package in required_packages:
+    try:
+        version = pkg_resources.get_distribution(package).version
+        print(f"{package}: {version}")
+    except pkg_resources.DistributionNotFound:
+        print(f"{package}: Not found")
+
+# Check for GPU availability (if needed)
+try:
+    import torch
+    print(f"\nPyTorch version: {torch.__version__}")
+    print(f"CUDA available: {torch.cuda.is_available()}")
+    if torch.cuda.is_available():
+        print(f"GPU device: {torch.cuda.get_device_name(0)}")
+except ImportError:
+    print("\nPyTorch not installed (not required for basic operation)")
+
+print("\nBase environment setup completed successfully!")"""
+    nb.cells.append(nbf.v4.new_code_cell(verify_code))
+    
+    # Add model verification cell
+    model_code = """\
+# Verify model and context length capabilities
+from transformers import AutoTokenizer, AutoModelForCausalLM
+import torch
+
+def check_model_and_context():
+    print("Checking model and context length capabilities...")
+    try:
+        # Load tokenizer
+        tokenizer = AutoTokenizer.from_pretrained("Qwen/Qwen-1_8B", trust_remote_code=True)
+        print("\\nTokenizer loaded successfully")
+        print(f"Maximum context length: {tokenizer.model_max_length}")
+        
+        # Test context length
+        test_text = "test " * 2000  # Create ~4k tokens of text
+        tokens = tokenizer(test_text, return_tensors="pt")
+        print(f"Successfully encoded {len(tokens['input_ids'][0])} tokens")
+        
+        # Load model in 8-bit to save memory
+        print("\\nLoading model (this may take a few minutes)...")
+        model = AutoModelForCausalLM.from_pretrained(
+            "Qwen/Qwen-1_8B",
+            device_map="auto",
+            trust_remote_code=True,
+            load_in_8bit=True
+        )
+        print("Model loaded successfully")
+        
+        # Test model with small input
+        input_text = "Calculate 24: Given numbers [2, 8, 9, 1], find operations to make 24."
+        inputs = tokenizer(input_text, return_tensors="pt").to(model.device)
+        
+        with torch.no_grad():
+            outputs = model.generate(
+                **inputs,
+                max_new_tokens=100,
+                do_sample=True,
+                temperature=0.7
+            )
+        
+        response = tokenizer.decode(outputs[0], skip_special_tokens=True)
+        print("\\nTest generation successful!")
+        print(f"Input: {input_text}")
+        print(f"Output: {response}")
+        
+        return True
+    except Exception as e:
+        print(f"\\nError during model verification: {str(e)}")
+        return False
+
+# Run verification
+model_ok = check_model_and_context()
+if model_ok:
+    print("\\n✅ Environment fully verified and ready!")
+else:
+    print("\\n⚠️ Some verifications failed. Check the errors above.")"""
+    nb.cells.append(nbf.v4.new_code_cell(model_code))
     
     # Read the script
     with open(script_path, 'r') as f:
