@@ -116,56 +116,93 @@ def get_next_states(current: State) -> List[Tuple[State, float]]:
     return next_states
 
 def solve_24_astar(numbers: List[int], target: float = 24.0, 
-                  tolerance: float = 1e-10) -> Optional[Solution]:
+                  tolerance: float = 1e-10,
+                  timeout: float = 10.0,  # Increased timeout
+                  verbose: bool = True) -> Optional[Solution]:
     """
-    Solve 24-point problem using A* search.
-    Returns detailed solution steps with backtracking information.
+    Solve 24-point problem using A* search with detailed exploration.
+    Returns solution steps with comprehensive backtracking information.
     """
+    import time
+    start_time = time.time()
+    
     initial_state = State(
         numbers=[float(n) for n in numbers],
-        operations=[f"Start with numbers {numbers}"],
+        operations=[
+            f"Initial state:",
+            f"  Numbers available: {numbers}",
+            f"  Target value: {target}",
+            f"  Starting heuristic calculation..."
+        ],
         target=target
     )
     
     # Priority queue for A* search
     frontier = PriorityQueue()
     initial_h = calculate_heuristic(initial_state.numbers, target)
+    initial_state.operations.append(
+        f"  Initial heuristic value: {initial_h:.2f}\n"
+        f"Beginning A* search with initial state..."
+    )
     frontier.put((initial_h, 0, initial_state))
     
     # Track visited states and their parents for backtracking
-    visited = {}  # state_key -> (parent_key, operation)
+    visited = {}  # state_key -> (parent_key, operation, min_h, step_count)
     initial_key = tuple(sorted(initial_state.numbers))
-    visited[initial_key] = (None, None)
+    visited[initial_key] = (None, None, initial_h, 0)
     
-    # Track explored states for detailed search process
+    # Track explored states and paths for detailed search process
     explored_states = []
+    exploration_paths = []
     
-    # Counter for tiebreaking
+    # Counter for tiebreaking and progress tracking
     counter = 1
+    states_explored = 0
+    max_states = 2000  # Increased state limit
     
-    while not frontier.empty():
+    while not frontier.empty() and states_explored < max_states:
+        # Check timeout
+        if time.time() - start_time > timeout:
+            if verbose:
+                print(f"Search timed out after {timeout} seconds")
+            return None
+            
         h_value, _, current_state = frontier.get()
         current_key = tuple(sorted(current_state.numbers))
+        states_explored += 1
         
-        # Record exploration
+        # Record detailed exploration
         explored_states.append((current_key, h_value))
-        current_state.operations.append(
-            f"Exploring state with numbers {[float(n) for n in current_state.numbers]}, "
-            f"heuristic value: {h_value:.2f}"
-        )
+        step_count = len(current_state.operations)
+        
+        # Add detailed exploration steps
+        current_state.operations.extend([
+            f"\nExploration Step {states_explored}:",
+            f"  Current numbers: {[float(n) for n in current_state.numbers]}",
+            f"  Heuristic value: {h_value:.2f}",
+            f"  Distance to target: {abs(sum(current_state.numbers) - target):.2f}",
+            f"  States explored so far: {states_explored}",
+            "  Analyzing possible operations..."
+        ])
+        
+        # Track exploration path
+        if len(current_state.numbers) < len(numbers):
+            parent_key = visited[current_key][0]
+            if parent_key:
+                exploration_paths.append((parent_key, current_key))
         
         # Check if we've reached the target
         if (len(current_state.numbers) == 1 and 
             abs(current_state.numbers[0] - target) < tolerance):
             
-            # Build complete solution path with backtracking info
+            # Build solution path (limit backtracking info)
             solution_steps = current_state.operations.copy()
             
-            # Add backtracking information
+            # Add limited backtracking information
             backtrack_count = 0
-            for i, (state_key, h) in enumerate(explored_states):
+            for i, (state_key, h) in enumerate(explored_states[:50]):  # Limit to first 50
                 if i > 0:
-                    parent_key, op = visited[state_key]
+                    parent_key, op, _ = visited[state_key]
                     if parent_key:
                         if op and "Apply" in op:
                             solution_steps.append(op)
@@ -188,22 +225,21 @@ def solve_24_astar(numbers: List[int], target: float = 24.0,
         # Generate and evaluate next states
         next_states = get_next_states(current_state)
         
-        # Sort by heuristic value for better exploration
-        next_states.sort(key=lambda x: x[1])
-        
-        for next_state, next_h in next_states:
+        # Process next states (limit branching)
+        for next_state, next_h in sorted(next_states, key=lambda x: x[1])[:10]:  # Limit branching
             state_key = tuple(sorted(next_state.numbers))
             if state_key not in visited:
-                visited[state_key] = (current_key, next_state.operations[-1])
+                visited[state_key] = (current_key, next_state.operations[-1], next_h)
                 frontier.put((next_h, counter, next_state))
                 counter += 1
-            elif next_h < h_value:  # Found a better path
-                visited[state_key] = (current_key, next_state.operations[-1])
+            elif next_h < visited[state_key][2]:  # Found a better path
+                visited[state_key] = (current_key, next_state.operations[-1], next_h)
                 frontier.put((next_h, counter, next_state))
                 counter += 1
-                current_state.operations.append(
-                    f"Found better path to state {[float(n) for n in next_state.numbers]}"
-                )
+                if len(current_state.operations) < 100:  # Limit operation history
+                    current_state.operations.append(
+                        f"Found better path to state {[float(n) for n in next_state.numbers]}"
+                    )
     
     return None
 
