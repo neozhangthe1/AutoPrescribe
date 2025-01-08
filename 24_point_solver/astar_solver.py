@@ -40,33 +40,86 @@ def calculate_heuristic(numbers: List[float], target: float = 24.0) -> float:
 
 def calculate_difficulty(steps: List[str], initial_numbers: List[int]) -> float:
     """Calculate solution difficulty based on operations and numbers"""
-    # Operation weights
-    op_weights = {'+': 1.0, '-': 1.2, '*': 1.5, '/': 2.0}
+    # Operation weights (division and subtraction are harder)
+    op_weights = {'+': 1.0, '-': 1.5, '*': 1.2, '/': 2.0}
     
-    # Base difficulty from operations
-    op_difficulty = sum(op_weights[step.split()[1]] for step in steps if "Apply" in step)
+    # Count operations
+    op_counts = {op: 0 for op in op_weights}
+    for step in steps:
+        if "Apply" in step:
+            for op in op_weights:
+                if f" {op} " in step:
+                    op_counts[op] += 1
     
-    # Number complexity (larger numbers are harder)
-    num_difficulty = sum(min(float(n), 13.0) / 2.0 for n in initial_numbers) / len(initial_numbers)
+    # Base difficulty from operations (weighted sum)
+    op_difficulty = sum(op_weights[op] * count for op, count in op_counts.items())
     
-    # Solution length factor (including backtracking)
-    length_factor = len([step for step in steps if "Apply" in step]) / 3.0
+    # Number complexity factors
+    numbers = [float(n) for n in initial_numbers]
+    num_difficulty = (
+        sum(min(n, 13.0) / 2.0 for n in numbers) / len(numbers) +  # Size factor
+        (max(numbers) - min(numbers)) / 13.0 +  # Range factor
+        (len(set(numbers)) / len(numbers))  # Uniqueness factor
+    )
     
-    # Operation diversity bonus
-    unique_ops = len({step.split()[1] for step in steps if "Apply" in step})
-    diversity_bonus = unique_ops * 0.5
-    
-    # Backtracking penalty
+    # Solution complexity factors
+    total_ops = sum(op_counts.values())
+    unique_ops = len([op for op, count in op_counts.items() if count > 0])
     backtrack_count = len([s for s in steps if "Backtrack" in s])
-    backtrack_factor = 1.0 + (backtrack_count * 0.2)  # 20% increase per backtrack
     
-    # Calculate final difficulty score (0-10 scale)
-    difficulty = (op_difficulty * 0.3 + 
-                 num_difficulty * 0.2 + 
-                 length_factor * 0.2 + 
-                 diversity_bonus * 0.1 + 
-                 backtrack_factor * 0.2) * 2
+    # Calculate raw component scores
+    op_weights = {'+': 1.0, '-': 1.5, '*': 1.2, '/': 2.0}
+    op_counts = defaultdict(int)
+    for step in steps:
+        if "Apply" in step:
+            for op in op_weights:
+                if f" {op} " in step:
+                    op_counts[op] += 1
     
+    # Operation complexity (0-3 points)
+    op_score = sum(op_weights[op] * count for op, count in op_counts.items()) / 4.0
+    
+    # Number complexity (0-2 points)
+    numbers = [float(n) for n in initial_numbers]
+    num_score = (
+        sum(1 for n in numbers if n > 10) * 0.5 +  # Large numbers
+        (len(set(numbers)) / len(numbers)) * 0.5 +  # Uniqueness
+        (max(numbers) - min(numbers)) / 13.0        # Range
+    )
+    
+    # Solution length (0-2 points)
+    total_ops = sum(op_counts.values())
+    length_score = total_ops / 3.0
+    
+    # Operation diversity (0-1.5 points)
+    unique_ops = len([op for op, count in op_counts.items() if count > 0])
+    diversity_score = (unique_ops / 4.0) * 1.5
+    
+    # Backtracking complexity (0-1.5 points)
+    backtrack_steps = len([s for s in steps if "Backtrack" in s])
+    backtrack_score = min(1.5, backtrack_steps / 3.0)
+    
+    # Calculate base difficulty (0-7 points)
+    base_difficulty = (
+        min(3.0, op_score) +      # Operations (0-3)
+        min(2.0, num_score) +     # Numbers (0-2)
+        min(2.0, length_score)    # Length (0-2)
+    )
+    
+    # Apply modifiers
+    difficulty = (
+        base_difficulty +
+        diversity_score +    # Diversity bonus (0-1.5)
+        backtrack_score     # Backtracking complexity (0-1.5)
+    )
+    
+    # Scale to 1-10 range with sigmoid-like curve
+    # This creates more variation in the middle range
+    normalized = difficulty / 10.0  # Scale to 0-1
+    sigmoid = 1.0 / (1.0 + math.exp(-6 * (normalized - 0.5)))  # Steeper sigmoid
+    scaled_difficulty = 1.0 + sigmoid * 9.0  # Map to 1-10 range
+    
+    # Ensure minimum difficulty of 1.0 and maximum of 10.0
     return min(10.0, max(1.0, difficulty))
 
 def apply_operation(a: float, b: float, op: str) -> Optional[float]:
@@ -117,79 +170,281 @@ def get_next_states(current: State) -> List[Tuple[State, float]]:
 
 def solve_24_astar(numbers: List[int], target: float = 24.0, 
                   tolerance: float = 1e-10,
-                  timeout: float = 10.0,  # Increased timeout
+                  timeout: float = 15.0,  # Increased timeout further
                   verbose: bool = True) -> Optional[Solution]:
     """
-    Solve 24-point problem using A* search with detailed exploration.
-    Returns solution steps with comprehensive backtracking information.
+    Solve 24-point problem using A* search with comprehensive exploration tracking.
+    Returns detailed solution steps with extensive backtracking information.
     """
     import time
-    start_time = time.time()
+    import math
+    from functools import reduce
+    from operator import mul
     
+    start_time = time.time()
+    best_h_value = float('inf')
+    last_state = None
+    
+    def prod(numbers):
+        return reduce(mul, numbers, 1)
+    
+    # Initialize with detailed problem description
     initial_state = State(
         numbers=[float(n) for n in numbers],
         operations=[
-            f"Initial state:",
-            f"  Numbers available: {numbers}",
-            f"  Target value: {target}",
-            f"  Starting heuristic calculation..."
+            "Problem Analysis:",
+            "-------------",
+            f"Goal: Find a sequence of arithmetic operations to reach {target}",
+            f"Available numbers: {numbers}",
+            "",
+            "Initial State Analysis:",
+            "-------------------",
+            "1. Number Properties:",
+            f"   - Count: {len(numbers)} numbers",
+            f"   - Sum: {sum(numbers)}",
+            f"   - Product: {prod(numbers)}",
+            f"   - Max: {max(numbers)}",
+            f"   - Min: {min(numbers)}",
+            "",
+            "2. Search Strategy:",
+            "   - Using A* search algorithm",
+            "   - Heuristic: Minimum difference to target",
+            "   - Operations allowed: +, -, *, /",
+            "",
+            "3. Search Space Analysis:",
+            f"   - Maximum possible states: {len(numbers) * (len(numbers) - 1) * 4}",
+            f"   - Maximum search depth: {len(numbers) - 1}",
+            f"   - Branching factor: {len(numbers) * (len(numbers) - 1) * 2}",
+            "",
+            "4. Solution Requirements:",
+            f"   - Target value: {target}",
+            f"   - Tolerance: {tolerance}",
+            f"   - Time limit: {timeout} seconds",
+            "",
+            "Starting Search Process:",
+            "--------------------",
+            "Search Log:",
+            "----------"
         ],
         target=target
     )
     
-    # Priority queue for A* search
+    # Priority queue for A* search with detailed tracking
     frontier = PriorityQueue()
     initial_h = calculate_heuristic(initial_state.numbers, target)
-    initial_state.operations.append(
-        f"  Initial heuristic value: {initial_h:.2f}\n"
-        f"Beginning A* search with initial state..."
-    )
+    initial_state.operations.extend([
+        "Initial State Evaluation:",
+        f"  Numbers: {[float(n) for n in initial_state.numbers]}",
+        f"  Heuristic value: {initial_h:.2f}",
+        f"  Distance to target: {abs(sum(initial_state.numbers) - target):.2f}",
+        "",
+        "Search Log:",
+        "----------"
+    ])
     frontier.put((initial_h, 0, initial_state))
     
-    # Track visited states and their parents for backtracking
-    visited = {}  # state_key -> (parent_key, operation, min_h, step_count)
+    # Enhanced state tracking
+    visited = {}  # state_key -> (parent_key, operation, min_h, step_count, path)
     initial_key = tuple(sorted(initial_state.numbers))
-    visited[initial_key] = (None, None, initial_h, 0)
+    visited[initial_key] = (None, None, initial_h, 0, [initial_key])
     
-    # Track explored states and paths for detailed search process
+    # Comprehensive search process tracking
     explored_states = []
     exploration_paths = []
+    dead_ends = []  # Track states that led to no solution
     
-    # Counter for tiebreaking and progress tracking
+    # Search control
     counter = 1
     states_explored = 0
-    max_states = 2000  # Increased state limit
+    max_states = 3000  # Further increased state limit
+    backtrack_count = 0
     
     while not frontier.empty() and states_explored < max_states:
-        # Check timeout
+        # Check timeout with detailed message
         if time.time() - start_time > timeout:
             if verbose:
                 print(f"Search timed out after {timeout} seconds")
+            if last_state:
+                last_state.operations.extend([
+                    "",
+                    "Search Terminated:",
+                    f"- Time limit ({timeout}s) exceeded",
+                    f"- States explored: {states_explored}",
+                    f"- Current best heuristic: {best_h_value:.2f}",
+                    f"- Best state reached: {[float(n) for n in last_state.numbers]}"
+                ])
             return None
             
         h_value, _, current_state = frontier.get()
         current_key = tuple(sorted(current_state.numbers))
         states_explored += 1
         
-        # Record detailed exploration
+        # Update best state tracking
+        if h_value < best_h_value:
+            best_h_value = h_value
+            last_state = current_state
+        
+        # Enhanced state exploration logging
         explored_states.append((current_key, h_value))
         step_count = len(current_state.operations)
         
-        # Add detailed exploration steps
+        # Get path to current state
+        current_path = []
+        temp_key = current_key
+        while temp_key in visited:
+            current_path.append(temp_key)
+            parent_info = visited[temp_key]
+            if parent_info[0] is None:
+                break
+            temp_key = parent_info[0]
+        current_path.reverse()
+        
+        # Get next possible states for analysis
+        next_states = []
+        for i in range(len(current_state.numbers)):
+            for j in range(i + 1, len(current_state.numbers)):
+                for op in ['+', '-', '*', '/']:
+                    a, b = current_state.numbers[i], current_state.numbers[j]
+                    result = apply_operation(a, b, op)
+                    if result is not None:
+                        # Create new state with the result
+                        new_numbers = current_state.numbers.copy()
+                        new_numbers.pop(j)
+                        new_numbers[i] = result
+                        
+                        # Generate detailed operation description
+                        op_desc = (
+                            f"Apply {op} to {a:.2f} and {b:.2f} to get {result:.2f}\n"
+                            f"  - Operation: {a:.2f} {op} {b:.2f} = {result:.2f}\n"
+                            f"  - Remaining numbers: {[float(n) for n in new_numbers]}\n"
+                            f"  - Progress: {len(new_numbers)} numbers remaining\n"
+                            f"  - Target distance: {abs(sum(new_numbers) - target):.2f}"
+                        )
+                        
+                        next_h = calculate_heuristic(new_numbers, target)
+                        next_states.append((new_numbers, op_desc, next_h))
+        
+        # Sort next states by heuristic value
+        next_states.sort(key=lambda x: x[2])
+        
+        # Detailed exploration log with next state analysis
         current_state.operations.extend([
-            f"\nExploration Step {states_explored}:",
-            f"  Current numbers: {[float(n) for n in current_state.numbers]}",
-            f"  Heuristic value: {h_value:.2f}",
-            f"  Distance to target: {abs(sum(current_state.numbers) - target):.2f}",
-            f"  States explored so far: {states_explored}",
-            "  Analyzing possible operations..."
+            "",
+            f"Exploration Step {states_explored}:",
+            "-------------------",
+            "1. Current State Analysis:",
+            f"   Numbers: {[float(n) for n in current_state.numbers]}",
+            f"   Heuristic value: {h_value:.2f}",
+            f"   Distance to target: {abs(sum(current_state.numbers) - target):.2f}",
+            f"   Best heuristic so far: {best_h_value:.2f}",
+            "",
+            "2. Search Progress:",
+            f"   States explored: {states_explored}",
+            f"   Current depth: {len(numbers) - len(current_state.numbers)}",
+            f"   Backtrack count: {backtrack_count}",
+            f"   Queue size: {frontier.qsize()}",
+            "",
+            "3. Path Analysis:",
+            "   Current path:",
+            "   " + " -> ".join(str(list(p)) for p in current_path),
+            "",
+            "4. Next State Analysis:",
+            "   Possible next states (top 5):"
         ])
         
-        # Track exploration path
+        # Add extremely detailed next state analysis with mathematical properties
+        for i, (next_nums, op_desc, next_h) in enumerate(next_states[:5]):
+            op_type = op_desc.split()[1]
+            operands = [float(op_desc.split()[3]), float(op_desc.split()[5])]
+            result = float(op_desc.split()[-1])
+            
+            current_state.operations.extend([
+                f"\n   {i+1}. Comprehensive Next State Analysis:",
+                "   ==============================",
+                f"   Operation Details:",
+                f"{op_desc}",
+                f"   Mathematical Properties:",
+                f"      1. Operation Characteristics:",
+                f"         - Type: {op_type}",
+                f"         - Properties:",
+                f"           * Commutative: {op_type in ['+', '*']}",
+                f"           * Associative: {op_type in ['+', '*']}",
+                f"           * Has inverse: {op_type in ['+', '*']}",
+                f"           * Identity element: {1 if op_type == '*' else 0}",
+                f"      2. Number Properties:",
+                f"         - Operands: {operands}",
+                f"           * Sum: {sum(operands):.2f}",
+                f"           * Product: {math.prod(operands):.2f}",
+                f"           * Ratio: {f'{operands[0]/operands[1]:.2f}' if abs(operands[1]) > 1e-10 else 'undefined'}",
+                f"           * GCD: {str(math.gcd(int(operands[0]), int(operands[1]))) if all(x.is_integer() and abs(x) < 1e6 for x in operands) else 'N/A'}",
+                f"         - Result: {f'{result:.2f}' if not math.isinf(result) and not math.isnan(result) else 'undefined'}",
+                f"           * Integer?: {'Yes' if not math.isinf(result) and not math.isnan(result) and result.is_integer() else 'No' if not math.isinf(result) and not math.isnan(result) else 'N/A'}",
+                f"           * Sign: {'+'  if not math.isinf(result) and not math.isnan(result) and result > 0 else '-' if not math.isinf(result) and not math.isnan(result) and result < 0 else '0' if not math.isinf(result) and not math.isnan(result) and result == 0 else 'undefined'}",
+                f"   State Evaluation:",
+                f"      1. Heuristic Analysis:",
+                f"         - New value: {next_h:.2f}",
+                f"         - Previous: {h_value:.2f}",
+                f"         - Change: {h_value - next_h:+.2f}",
+                f"         - Relative improvement: {f'{((h_value - next_h)/h_value*100):.1f}' if abs(h_value) > 1e-10 else '0.0'}%",
+                f"      2. Target Analysis:",
+                f"         - Current distance: {abs(sum(next_nums) - target):.2f}",
+                f"         - Progress: {f'{(1 - min(1, abs(sum(next_nums) - target)/target))*100:.1f}'}% to goal",
+                f"   Numerical Analysis:",
+                f"      1. State Properties:",
+                f"         - Numbers: {next_nums}",
+                f"         - Count: {len(next_nums)}",
+                f"         - Unique values: {len(set(next_nums))}",
+                f"      2. Statistical Measures:",
+                f"         - Sum: {sum(next_nums):.2f}",
+                f"         - Product: {math.prod(next_nums):.2f}",
+                f"         - Mean: {sum(next_nums)/len(next_nums):.2f}",
+                f"         - Range: {max(next_nums) - min(next_nums):.2f}",
+                f"      3. Distribution:",
+                f"         - Minimum: {min(next_nums):.2f}",
+                f"         - Maximum: {max(next_nums):.2f}",
+                f"         - Median: {sorted(next_nums)[len(next_nums)//2]:.2f}",
+                f"   Search Progress:",
+                f"      1. Path Metrics:",
+                f"         - Depth: {4-len(next_nums)}",
+                f"         - Branching factor: {len(next_states)}",
+                f"         - Path length: {len(current_state.operations)}",
+                f"      2. Completion Analysis:",
+                f"         - Progress: {((4-len(next_nums))/3*100):.1f}%",
+                f"         - Steps taken: {3-len(next_nums)+1}",
+                f"         - Steps remaining: {len(next_nums)-1}",
+                "\n"
+            ])
+            
+        current_state.operations.extend([
+            "",
+            "5. Decision Process:",
+            f"   Total next states: {len(next_states)}",
+            f"   Best next heuristic: {next_states[0][2] if next_states else 'N/A'}",
+            f"   Worst next heuristic: {next_states[-1][2] if next_states else 'N/A'}",
+            "   Selected operation: Choosing best available next state",
+            "",
+            "6. Memory Analysis:",
+            f"   Visited states: {len(visited)}",
+            f"   Frontier size: {frontier.qsize()}",
+            f"   Exploration history: {len(explored_states)} states"
+        ])
+        
+        # Track exploration with backtracking
         if len(current_state.numbers) < len(numbers):
             parent_key = visited[current_key][0]
             if parent_key:
                 exploration_paths.append((parent_key, current_key))
+                # Check if we're backtracking
+                if parent_key in [p[1] for p in exploration_paths[-5:]]:
+                    backtrack_count += 1
+                    current_state.operations.extend([
+                        "",
+                        "Backtracking Detected:",
+                        f"   Previous state: {list(parent_key)}",
+                        f"   Current state: {list(current_key)}",
+                        f"   Reason: Better path found",
+                        ""
+                    ])
         
         # Check if we've reached the target
         if (len(current_state.numbers) == 1 and 

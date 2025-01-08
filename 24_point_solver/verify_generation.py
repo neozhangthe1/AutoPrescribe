@@ -63,7 +63,7 @@ def main():
     # Generate full problem set with progress tracking
     print('Generating test problems...')
     problems = []
-    target = 120  # Generate extra to ensure we get at least 100
+    target = 200  # Generate extra to ensure we get at least 100 after filtering
     
     print(f'Attempting to generate {target} problems...')
     for i in range(target):
@@ -80,12 +80,23 @@ def main():
     # Filter problems to ensure uniform difficulty distribution
     difficulties = [p['difficulty'] for p in problems]
     min_diff, max_diff = min(difficulties), max(difficulties)
-    bucket_size = (max_diff - min_diff) / 5
+    
+    # Handle edge case where all difficulties are the same
+    if max_diff - min_diff < 0.1:
+        print("Warning: All problems have similar difficulty. Forcing distribution...")
+        bucket_size = 2.0  # Force 5 buckets across 1-10 range
+        min_diff = 1.0
+        max_diff = 10.0
+    else:
+        bucket_size = (max_diff - min_diff) / 5
+        
     buckets = {i: [] for i in range(5)}
     
     # Distribute problems into difficulty buckets
     for prob in problems:
-        bucket = min(4, int((prob['difficulty'] - min_diff) / bucket_size))
+        # Normalize difficulty to 0-1 range and multiply by number of buckets
+        normalized = (prob['difficulty'] - min_diff) / (max_diff - min_diff)
+        bucket = min(4, max(0, int(normalized * 5)))
         buckets[bucket].append(prob)
     
     # Select equal number of problems from each bucket
