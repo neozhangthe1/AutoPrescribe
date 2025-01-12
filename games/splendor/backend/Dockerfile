@@ -1,24 +1,17 @@
-FROM python:3.12 as builder
-
-WORKDIR /app
-RUN pip install poetry
-RUN poetry config virtualenvs.in-project true
-
-COPY pyproject.toml poetry.lock ./
-RUN poetry install --no-dev --no-root
-
-COPY . .
-RUN poetry install --no-dev
-
 FROM python:3.12-slim
 
 WORKDIR /app
-COPY --from=builder /app/.venv /app/.venv
-COPY --from=builder /app/app /app/app
 
-ENV PATH="/app/.venv/bin:$PATH"
+RUN pip install poetry
+
+COPY pyproject.toml poetry.lock ./
+RUN poetry config virtualenvs.create false \
+    && poetry install --no-dev --no-root
+
+COPY ./app ./app
+
 ENV PYTHONPATH=/app
-
 ENV PORT=8080
 EXPOSE 8080
-CMD ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080"]
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8080"]
