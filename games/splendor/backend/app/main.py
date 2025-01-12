@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .models import GameState, Tokens, Card
 from .game_logic import GameLogic
 from typing import Dict
+import uvicorn
 
 app = FastAPI(title="Splendor Game API")
 game = GameLogic()
@@ -15,6 +16,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+if __name__ == "__main__":
+    uvicorn.run("app.main:app", host="0.0.0.0", port=8080)
 
 @app.post("/game/start", response_model=GameState)
 async def start_game(data: dict = Body(..., example={"num_players": 2})):
