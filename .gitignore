@@ -1,0 +1,36 @@
+# Vim swap files
+*.swp
+*.swo
+*.swn
+
+# Vim undo files
+*.un~
+
+# Vim session files
+Session.vim
+
+# Vim netrw history
+.netrwhist
+
+# Python cache files
+__pycache__/
+*.py[cod]
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# Environment
+.env
+.venv/
+venv/
+ENV/
+
+# IDE settings
+.vscode/
+.idea/
+
+# OS-specific files
+.DS_Store
+Thumbs.db

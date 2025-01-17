@@ -1,0 +1,53 @@
+*kimi.txt*  Kimi AI Assistant for Vim
+
+Copyright 2025 Moonshot AI
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+
+Author:  Moonshot AI
+License: Apache-2.0
+
+INTRODUCTION                                    *kimi*
+
+A Vim plugin that integrates Kimi AI (by Moonshot) into your workflow for
+AI-powered chat and code completion assistance.
+
+COMMANDS                                        *kimi-commands*
+
+:KimiChat                                      *:KimiChat*
+        Opens the Kimi chat interface in a new window.
+
+:[range]KimiComplete [instruction]             *:KimiComplete*
+        Sends the selected code to Kimi for completion or modification based on
+        the given instruction.
+
+CONFIGURATION                                  *kimi-configuration*
+
+g:kimi_api_key                                 *g:kimi_api_key*
+        Your Kimi API key from Moonshot Platform.
+        Default: ''
+
+g:kimi_map_chat                                *g:kimi_map_chat*
+        Mapping to open the chat interface.
+        Default: '<Leader>kc'
+
+g:kimi_map_complete                            *g:kimi_map_complete*
+        Mapping to trigger code completion.
+        Default: '<Leader>ki'
+
+g:kimi_model                                   *g:kimi_model*
+        The Kimi model to use.
+        Default: 'moonshot-v1-8k'
+        Options: 'moonshot-v1-8k', 'moonshot-v1-32k', 'moonshot-v1-128k'
+
+ vim:tw=78:ts=8:ft=help:norl:
