@@ -14,4 +14,4 @@ ENV PYTHONPATH=/app
 ENV PORT=8080
 EXPOSE 8080
 
-CMD ["uvicorn", "app.api:app", "--host", "0.0.0.0", "--port", "8080"]
+CMD ["python", "-m", "uvicorn", "app.api:app", "--host", "0.0.0.0", "--port", "8080"]
