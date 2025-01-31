@@ -14,4 +14,4 @@ ENV PYTHONPATH=/app
 ENV PORT=8080
 EXPOSE 8080
 
-CMD ["poetry", "run", "python", "-m", "fastapi", "run", "app/api.py"]
+CMD ["poetry", "run", "uvicorn", "app.api:app", "--host", "0.0.0.0", "--port", "8080"]
