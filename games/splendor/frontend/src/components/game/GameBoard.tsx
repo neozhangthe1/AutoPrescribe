@@ -46,8 +46,8 @@ export const GameBoard: React.FC<GameBoardProps> = ({
       
       // If we're selecting a new color
       if (current === 0) {
-        // If we already have 3 tokens total, can't select more
-        if (total >= 3) {
+        // If we already have 3 tokens total or trying to select same color when we have 2 different ones
+        if (total >= 3 || (uniqueColors === 2 && Object.values(prev).some(count => count === 2))) {
           return prev;
         }
         
