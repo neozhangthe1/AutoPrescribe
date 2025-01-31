@@ -19,6 +19,3 @@ primary_region = "sin"
   memory = "256mb"
   cpu_kind = "shared"
   cpus = 1
-
-[processes]
-  app = "python -m uvicorn app.api:app --host 0.0.0.0 --port 8080"
