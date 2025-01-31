@@ -3,6 +3,7 @@ name = "splendor-backend"
 version = "0.1.0"
 description = "Backend for Splendor board game implementation"
 authors = ["Devin <devin@example.com>"]
+package-mode = false
 
 [tool.poetry.dependencies]
 python = "^3.12"
