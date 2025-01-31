@@ -11,6 +11,13 @@ primary_region = "sin"
   auto_start_machines = true
   min_machines_running = 0
 
+[deploy]
+  strategy = "immediate"
+  release_command = "poetry install --no-dev"
+
+[processes]
+  app = "poetry run uvicorn app.api:app --host 0.0.0.0 --port 8080"
+
 [env]
   PORT = "8080"
   PYTHONPATH = "/app"
