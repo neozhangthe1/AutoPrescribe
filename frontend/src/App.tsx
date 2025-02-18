@@ -244,55 +244,57 @@ function App() {
         </Card>
 
         <div className="grid grid-cols-1 gap-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Content Generation</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <Input
-                  placeholder="Enter keywords for content generation (e.g., software engineer, web development)"
-                  value={generationQuery}
-                  onChange={(e) => setGenerationQuery(e.target.value)}
-                />
-                <div className="flex space-x-2">
-                  <Button onClick={handlePreviewGeneration}>Preview</Button>
-                  <Button onClick={handleApplyGeneration} disabled={!previewContent}>Apply</Button>
-                </div>
-                {previewContent && (
-                  <div className="p-4 border rounded bg-muted">
-                    <p className="text-sm text-muted-foreground mb-2">Preview:</p>
-                    <div dangerouslySetInnerHTML={{ __html: previewContent }} />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>Content Generation</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <Input
+                    placeholder="Enter keywords for content generation (e.g., software engineer, web development)"
+                    value={generationQuery}
+                    onChange={(e) => setGenerationQuery(e.target.value)}
+                  />
+                  <div className="flex space-x-2">
+                    <Button onClick={handlePreviewGeneration}>Preview</Button>
+                    <Button onClick={handleApplyGeneration} disabled={!previewContent}>Apply</Button>
                   </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+                  {previewContent && (
+                    <div className="p-4 border rounded bg-muted">
+                      <p className="text-sm text-muted-foreground mb-2">Preview:</p>
+                      <div dangerouslySetInnerHTML={{ __html: previewContent }} />
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Content Optimization</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <Input
-                  placeholder="Enter optimization rules (e.g., professional tone, action verbs)"
-                  value={optimizationRules}
-                  onChange={(e) => setOptimizationRules(e.target.value)}
-                />
-                <div className="flex space-x-2">
-                  <Button onClick={handlePreviewOptimization}>Preview</Button>
-                  <Button onClick={handleApplyOptimization} disabled={!optimizedContent}>Apply</Button>
-                </div>
-                {optimizedContent && (
-                  <div className="p-4 border rounded bg-muted">
-                    <p className="text-sm text-muted-foreground mb-2">Preview:</p>
-                    <div dangerouslySetInnerHTML={{ __html: optimizedContent }} />
+            <Card>
+              <CardHeader>
+                <CardTitle>Content Optimization</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <Input
+                    placeholder="Enter optimization rules (e.g., professional tone, action verbs)"
+                    value={optimizationRules}
+                    onChange={(e) => setOptimizationRules(e.target.value)}
+                  />
+                  <div className="flex space-x-2">
+                    <Button onClick={handlePreviewOptimization}>Preview</Button>
+                    <Button onClick={handleApplyOptimization} disabled={!optimizedContent}>Apply</Button>
                   </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+                  {optimizedContent && (
+                    <div className="p-4 border rounded bg-muted">
+                      <p className="text-sm text-muted-foreground mb-2">Preview:</p>
+                      <div dangerouslySetInnerHTML={{ __html: optimizedContent }} />
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Card>
