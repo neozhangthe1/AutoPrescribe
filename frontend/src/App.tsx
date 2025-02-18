@@ -24,6 +24,8 @@ function App() {
   const [loading, setLoading] = useState(true)
   const [generationQuery, setGenerationQuery] = useState('')
   const [previewContent, setPreviewContent] = useState('')
+  const [optimizationRules, setOptimizationRules] = useState('')
+  const [optimizedContent, setOptimizedContent] = useState('')
 
   const handlePreviewGeneration = () => {
     if (!generationQuery) return;
@@ -46,6 +48,32 @@ function App() {
     editor.commands.setContent(previewContent);
     setPreviewContent('');
     setGenerationQuery('');
+  }
+
+  const handlePreviewOptimization = () => {
+    if (!optimizationRules || !editor) return;
+    
+    const currentContent = editor.getHTML();
+    const optimized = optimizeContent(currentContent, optimizationRules);
+    setOptimizedContent(optimized);
+  }
+
+  const handleApplyOptimization = () => {
+    if (!optimizedContent || !editor) return;
+    
+    editor.commands.setContent(optimizedContent);
+    setOptimizedContent('');
+    setOptimizationRules('');
+  }
+
+  const optimizeContent = (content: string, rules: string) => {
+    // Basic optimization rules
+    let optimized = content;
+    optimized = optimized.replace(/\b(good|nice|great)\b/gi, 'excellent');
+    optimized = optimized.replace(/\b(did|made|created)\b/gi, 'implemented');
+    optimized = optimized.replace(/\b(used|utilized)\b/gi, 'leveraged');
+    
+    return optimized;
   }
 
   const editor = useEditor({
@@ -214,6 +242,31 @@ function App() {
                   <div className="p-4 border rounded bg-muted">
                     <p className="text-sm text-muted-foreground mb-2">Preview:</p>
                     <div dangerouslySetInnerHTML={{ __html: previewContent }} />
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Content Optimization</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <Input
+                  placeholder="Enter optimization rules (e.g., professional tone, action verbs)"
+                  value={optimizationRules}
+                  onChange={(e) => setOptimizationRules(e.target.value)}
+                />
+                <div className="flex space-x-2">
+                  <Button onClick={handlePreviewOptimization}>Preview</Button>
+                  <Button onClick={handleApplyOptimization} disabled={!optimizedContent}>Apply</Button>
+                </div>
+                {optimizedContent && (
+                  <div className="p-4 border rounded bg-muted">
+                    <p className="text-sm text-muted-foreground mb-2">Preview:</p>
+                    <div dangerouslySetInnerHTML={{ __html: optimizedContent }} />
                   </div>
                 )}
               </div>
