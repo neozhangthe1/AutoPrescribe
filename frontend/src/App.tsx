@@ -8,6 +8,12 @@ import StarterKit from '@tiptap/starter-kit'
 import './components/editor.css'
 import { config } from './config'
 
+// Content generation types
+interface GenerationQuery {
+  query: string;
+  type: 'summary' | 'skills' | 'experience';
+}
+
 interface Document {
   id: string
   title: string
@@ -22,6 +28,8 @@ function App() {
   const [newTitle, setNewTitle] = useState('')
   const [selectedDoc, setSelectedDoc] = useState<Document | null>(null)
   const [loading, setLoading] = useState(true)
+  const [generationQuery, setGenerationQuery] = useState('')
+  const [previewContent, setPreviewContent] = useState('')
 
   const editor = useEditor({
     extensions: [StarterKit],
@@ -169,11 +177,37 @@ function App() {
           </CardContent>
         </Card>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4">
           <Card>
             <CardHeader>
-              <CardTitle>My Documents</CardTitle>
+              <CardTitle>Content Generation</CardTitle>
             </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <Input
+                  placeholder="Enter keywords for content generation (e.g., software engineer, web development)"
+                  value={generationQuery}
+                  onChange={(e) => setGenerationQuery(e.target.value)}
+                />
+                <div className="flex space-x-2">
+                  <Button onClick={handlePreviewGeneration}>Preview</Button>
+                  <Button onClick={handleApplyGeneration} disabled={!previewContent}>Apply</Button>
+                </div>
+                {previewContent && (
+                  <div className="p-4 border rounded bg-muted">
+                    <p className="text-sm text-muted-foreground mb-2">Preview:</p>
+                    <div dangerouslySetInnerHTML={{ __html: previewContent }} />
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>My Documents</CardTitle>
+              </CardHeader>
             <CardContent>
               <div className="space-y-2">
                 {documents.length === 0 ? (
