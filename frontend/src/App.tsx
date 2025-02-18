@@ -31,6 +31,29 @@ function App() {
   const [generationQuery, setGenerationQuery] = useState('')
   const [previewContent, setPreviewContent] = useState('')
 
+  const handlePreviewGeneration = () => {
+    if (!generationQuery) return;
+    
+    const keywords = generationQuery.toLowerCase().split(',').map(k => k.trim());
+    let content = '<h1>Professional Summary</h1>\n';
+    content += '<p>Experienced professional with expertise in ' + keywords.join(', ') + '.</p>\n';
+    content += '<h2>Key Skills</h2>\n<ul>\n';
+    keywords.forEach(skill => {
+      content += `<li>${skill.charAt(0).toUpperCase() + skill.slice(1)}</li>\n`;
+    });
+    content += '</ul>';
+    
+    setPreviewContent(content);
+  }
+
+  const handleApplyGeneration = () => {
+    if (!previewContent || !editor) return;
+    
+    editor.commands.setContent(previewContent);
+    setPreviewContent('');
+    setGenerationQuery('');
+  }
+
   const editor = useEditor({
     extensions: [StarterKit],
     content: selectedDoc?.content || '',
@@ -295,7 +318,7 @@ function App() {
         </div>
       </div>
     </div>
-  )
+  );
 }
 
-export default App
+export default App;
