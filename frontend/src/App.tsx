@@ -6,6 +6,7 @@ import { Loader2, Bold, Italic, Heading1, Heading2, List } from "lucide-react"
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import './components/editor.css'
+import { config } from './config'
 
 interface Document {
   id: string
@@ -28,14 +29,24 @@ function App() {
     onUpdate: ({ editor }) => {
       if (selectedDoc) {
         const content = editor.getHTML();
-        fetch(`${import.meta.env.VITE_BACKEND_URL}/documents/${selectedDoc.id}`, {
+        console.log('Updating document:', selectedDoc.id);
+        fetch(`${config.backendUrl}/documents/${selectedDoc.id}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
+            'Accept': 'application/json'
           },
           body: JSON.stringify({
             content: content
           })
+        }).then(response => {
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          console.log('Document updated successfully');
+        }).catch(error => {
+          console.error('Failed to update document:', error);
+          alert('Failed to save changes. Please try again.');
         });
       }
     },
@@ -52,61 +63,81 @@ function App() {
   }, [selectedDoc, editor])
 
   const fetchDocuments = async () => {
+    console.log('Fetching documents');
     try {
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/documents`, {
+      const response = await fetch(`${config.backendUrl}/documents`, {
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
         }
       })
+      console.log('Response status:', response.status);
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
+        const errorText = await response.text();
+        console.error('Error response:', errorText);
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
-      const data = await response.json()
-      setDocuments(data)
+      const data = await response.json();
+      console.log('Fetched documents:', data);
+      setDocuments(data);
     } catch (error) {
-      console.error('Failed to fetch documents:', error)
-      alert('Failed to load documents. Please refresh the page.')
+      console.error('Failed to fetch documents:', error);
+      alert('Failed to load documents. Please refresh the page.');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }
 
   const createDocument = async () => {
-    if (!newTitle) return
+    if (!newTitle) return;
+    console.log('Creating document with title:', newTitle);
     try {
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/documents?title=${encodeURIComponent(newTitle)}`, {
+      const url = `${config.backendUrl}/documents?title=${encodeURIComponent(newTitle)}`;
+      console.log('Making request to:', url);
+      const response = await fetch(url, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
         }
-      })
+      });
+      console.log('Response status:', response.status);
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
+        const errorText = await response.text();
+        console.error('Error response:', errorText);
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
-      const doc = await response.json()
-      setDocuments([...documents, doc])
-      setNewTitle('')
+      const doc = await response.json();
+      console.log('Created document:', doc);
+      setDocuments([...documents, doc]);
+      setNewTitle('');
     } catch (error) {
-      console.error('Failed to create document:', error)
-      alert('Failed to create document. Please try again.')
+      console.error('Failed to create document:', error);
+      alert('Failed to create document. Please try again.');
     }
   }
 
   const selectDocument = async (doc: Document) => {
+    console.log('Selecting document:', doc.id);
     try {
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/documents/${doc.id}`, {
+      const response = await fetch(`${config.backendUrl}/documents/${doc.id}`, {
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
         }
-      })
+      });
+      console.log('Response status:', response.status);
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
+        const errorText = await response.text();
+        console.error('Error response:', errorText);
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
-      const updatedDoc = await response.json()
-      setSelectedDoc(updatedDoc)
+      const updatedDoc = await response.json();
+      console.log('Selected document:', updatedDoc);
+      setSelectedDoc(updatedDoc);
     } catch (error) {
-      console.error('Failed to fetch document:', error)
-      alert('Failed to load document. Please try again.')
+      console.error('Failed to fetch document:', error);
+      alert('Failed to load document. Please try again.');
     }
   }
 
@@ -171,7 +202,7 @@ function App() {
                 <CardTitle>{selectedDoc.title}</CardTitle>
                 <Button 
                   variant="outline"
-                  onClick={() => window.open(`${import.meta.env.VITE_BACKEND_URL}/documents/${selectedDoc.id}/download`, '_blank')}
+                  onClick={() => window.open(`${config.backendUrl}/documents/${selectedDoc.id}/download`, '_blank')}
                 >
                   Download DOCX
                 </Button>
