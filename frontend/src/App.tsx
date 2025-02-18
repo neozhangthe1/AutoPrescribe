@@ -67,11 +67,32 @@ function App() {
   }
 
   const optimizeContent = (content: string, rules: string) => {
-    // Basic optimization rules
+    // Parse optimization rules
+    const rulesList = rules.toLowerCase().split(',').map(r => r.trim());
+    
     let optimized = content;
-    optimized = optimized.replace(/\b(good|nice|great)\b/gi, 'excellent');
-    optimized = optimized.replace(/\b(did|made|created)\b/gi, 'implemented');
-    optimized = optimized.replace(/\b(used|utilized)\b/gi, 'leveraged');
+    
+    // Apply professional tone rules
+    if (rulesList.includes('professional tone')) {
+      optimized = optimized.replace(/\b(good|nice|great)\b/gi, 'excellent');
+      optimized = optimized.replace(/\b(big|huge|massive)\b/gi, 'significant');
+      optimized = optimized.replace(/\b(got|grabbed|took)\b/gi, 'obtained');
+    }
+    
+    // Apply action verbs rules
+    if (rulesList.includes('action verbs')) {
+      optimized = optimized.replace(/\b(did|made|created)\b/gi, 'implemented');
+      optimized = optimized.replace(/\b(used|utilized)\b/gi, 'leveraged');
+      optimized = optimized.replace(/\b(helped|assisted)\b/gi, 'facilitated');
+    }
+    
+    // Apply formatting rules
+    if (rulesList.includes('formatting')) {
+      // Ensure proper spacing after periods
+      optimized = optimized.replace(/\.(?! |\n|$)/g, '. ');
+      // Remove double spaces
+      optimized = optimized.replace(/  +/g, ' ');
+    }
     
     return optimized;
   }
