@@ -8,12 +8,6 @@ import StarterKit from '@tiptap/starter-kit'
 import './components/editor.css'
 import { config } from './config'
 
-// Content generation types
-interface GenerationQuery {
-  query: string;
-  type: 'summary' | 'skills' | 'experience';
-}
-
 interface Document {
   id: string
   title: string
@@ -315,6 +309,7 @@ function App() {
               </CardContent>
             </Card>
           )}
+          </div>
         </div>
       </div>
     </div>
