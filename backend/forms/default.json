@@ -1,0 +1,101 @@
+{
+  "sections": [
+    {
+      "title": "Personal Information",
+      "fields": [
+        {
+          "id": "fullName",
+          "label": "Full Name",
+          "type": "text",
+          "required": true
+        },
+        {
+          "id": "email",
+          "label": "Email",
+          "type": "email",
+          "required": true
+        },
+        {
+          "id": "phone",
+          "label": "Phone Number",
+          "type": "tel",
+          "required": true
+        },
+        {
+          "id": "location",
+          "label": "Current Location",
+          "type": "text",
+          "required": true
+        }
+      ]
+    },
+    {
+      "title": "Education",
+      "fields": [
+        {
+          "id": "degree",
+          "label": "Highest Degree",
+          "type": "select",
+          "required": true,
+          "options": ["High School", "Bachelor's", "Master's", "PhD"]
+        },
+        {
+          "id": "university",
+          "label": "Institution",
+          "type": "text",
+          "required": true
+        },
+        {
+          "id": "graduationYear",
+          "label": "Graduation Year",
+          "type": "date",
+          "required": true
+        }
+      ]
+    },
+    {
+      "title": "Experience",
+      "fields": [
+        {
+          "id": "yearsExperience",
+          "label": "Years of Experience",
+          "type": "select",
+          "required": true,
+          "options": ["0-1", "1-3", "3-5", "5-10", "10+"]
+        },
+        {
+          "id": "projectExperience",
+          "label": "Project Experience",
+          "type": "textarea",
+          "required": false,
+          "placeholder": "Describe your project experience..."
+        },
+        {
+          "id": "skills",
+          "label": "Skills",
+          "type": "textarea",
+          "required": true,
+          "placeholder": "List your relevant skills..."
+        }
+      ]
+    },
+    {
+      "title": "Additional Information",
+      "fields": [
+        {
+          "id": "resume",
+          "label": "Resume",
+          "type": "file",
+          "required": true
+        },
+        {
+          "id": "coverLetter",
+          "label": "Cover Letter",
+          "type": "textarea",
+          "required": false,
+          "placeholder": "Why are you interested in this position?"
+        }
+      ]
+    }
+  ]
+}
