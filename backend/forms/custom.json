@@ -1,0 +1,21 @@
+{
+  "sections": [
+    {
+      "title": "Basic Information",
+      "fields": [
+        {
+          "id": "name",
+          "label": "Name",
+          "type": "text",
+          "required": true
+        },
+        {
+          "id": "email",
+          "label": "Email",
+          "type": "email",
+          "required": true
+        }
+      ]
+    }
+  ]
+}

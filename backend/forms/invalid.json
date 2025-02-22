@@ -1,0 +1,15 @@
+{
+  "sections": [
+    {
+      "title": "Invalid Section",
+      "fields": [
+        {
+          "id": "invalid",
+          "label": "Invalid Field",
+          "type": "invalid_type",
+          "required": true
+        }
+      ]
+    }
+  ]
+}
